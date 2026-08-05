@@ -38,7 +38,7 @@ $activePage = 'leaderboard';
 include __DIR__ . '/../includes/header.php';
 ?>
 <section class="leaderboard-hero">
-    <div class="container-wide" data-reveal><span class="eyebrow">Papan kedudukan</span><h1 class="page-title">Kehebatan bermula dengan latihan.</h1><p>Setiap pengguna diwakili oleh percubaan terbaik mereka. Skor tertinggi menang; masa terpantas memecahkan seri.</p></div>
+    <div class="container-wide" data-reveal><span class="eyebrow">Papan kedudukan · semua tema</span><h1 class="page-title">Kehebatan bermula dengan latihan.</h1><p>Ranking ini menggabungkan cabaran nombor, abjad, dan haiwan. Setiap cabaran mempunyai lima soalan bernilai 50 mata; skor tertinggi menang dan masa terpantas memecahkan seri.</p></div>
 </section>
 <div class="leaderboard-content">
     <div class="container-wide">

@@ -82,6 +82,7 @@
         recentGestures = [];
         stableSince = null;
         completedTarget = false;
+        practiceState.classList.remove('teal');
         gestureResult.textContent = '—';
         feedbackMessage.textContent = message;
         confidenceLabel.textContent = 'Kestabilan 0%';
@@ -106,10 +107,61 @@
         window.history.replaceState({}, '', url);
     };
 
+    const fingerAngle = (a, b, c) => {
+        const ab = [a.x - b.x, a.y - b.y, a.z - b.z];
+        const cb = [c.x - b.x, c.y - b.y, c.z - b.z];
+        const dot = ab[0] * cb[0] + ab[1] * cb[1] + ab[2] * cb[2];
+        const lengthAB = Math.hypot(...ab);
+        const lengthCB = Math.hypot(...cb);
+        if (!lengthAB || !lengthCB) return 0;
+        return Math.acos(Math.min(1, Math.max(-1, dot / (lengthAB * lengthCB)))) * (180 / Math.PI);
+    };
+
+    const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+
+    const extendedFingerPattern = (landmarks) => {
+        const wrist = landmarks[0];
+        const fingerIndexes = [
+            [5, 6, 8],
+            [9, 10, 12],
+            [13, 14, 16],
+            [17, 18, 20],
+        ];
+        const raised = fingerIndexes.map(([mcp, pip, tip]) => (
+            fingerAngle(landmarks[mcp], landmarks[pip], landmarks[tip]) > 150
+            && distance(landmarks[tip], wrist) > distance(landmarks[pip], wrist) * 1.08
+        ));
+        const thumbRaised = fingerAngle(landmarks[2], landmarks[3], landmarks[4]) > 145
+            && distance(landmarks[4], wrist) > distance(landmarks[3], wrist) * 1.15
+            && distance(landmarks[4], landmarks[5]) > distance(landmarks[3], landmarks[5]) * 1.08;
+        const palmWidth = distance(landmarks[5], landmarks[17]);
+        const thumbNearPalm = distance(landmarks[4], landmarks[5]) < palmWidth * 0.95;
+
+        return { raised, thumbRaised, thumbNearPalm };
+    };
+
+    const expectedGestureFromPattern = ({ raised, thumbRaised, thumbNearPalm }) => {
+        const pattern = raised.map((value) => value ? '1' : '0').join('');
+        if (pattern === '0000' && !thumbRaised && thumbNearPalm) return 'A';
+        if (pattern === '1000') return '1';
+        if (pattern === '1100') return '2';
+        if (pattern === '1110') return '3';
+        if (pattern === '1111') return thumbRaised ? '5' : '4';
+        return null;
+    };
+
     const classifyGesture = (landmarks) => {
-        const estimate = estimator.estimate(landmarks, 7.2);
-        if (!estimate.gestures.length) return null;
-        return estimate.gestures.reduce((best, current) => current.score > best.score ? current : best);
+        const expectedName = expectedGestureFromPattern(extendedFingerPattern(landmarks));
+        if (!expectedName) return null;
+
+        // MediaPipe returns objects; Fingerpose 0.1.0 requires coordinate triples.
+        const fingerposeLandmarks = landmarks.map(({ x, y, z }) => [x, y, z]);
+        const estimate = estimator.estimate(fingerposeLandmarks, 5.5);
+        const matchingGesture = estimate.gestures
+            .filter((gesture) => gesture.name === expectedName)
+            .sort((a, b) => b.score - a.score)[0];
+
+        return matchingGesture && matchingGesture.score >= 5.5 ? matchingGesture : null;
     };
 
     const onResults = (results) => {
@@ -140,11 +192,16 @@
         const occurrences = recentGestures.filter((name) => name === match.name).length;
         const stability = Math.round((occurrences / recentGestures.length) * 100);
 
-        gestureResult.textContent = match.name;
-        confidenceLabel.textContent = `Kestabilan ${stability}%`;
-        confidenceFill.style.width = `${stability}%`;
+        const hasEnoughSamples = recentGestures.length >= 6;
+        const fingerposeConfidence = Math.min(100, Math.round((match.score / 10) * 100));
 
-        if (match.name === target && stability >= 70) {
+        gestureResult.textContent = match.name;
+        confidenceLabel.textContent = hasEnoughSamples
+            ? `Padanan ${fingerposeConfidence}% · stabil ${stability}%`
+            : `Menstabilkan ${recentGestures.length}/6`;
+        confidenceFill.style.width = `${hasEnoughSamples ? Math.min(fingerposeConfidence, stability) : (recentGestures.length / 6) * 100}%`;
+
+        if (match.name === target && hasEnoughSamples && stability >= 70) {
             stableSince ??= performance.now();
             const heldMs = performance.now() - stableSince;
             const holdProgress = Math.min(100, Math.round((heldMs / requiredHoldMs) * 100));
@@ -181,7 +238,7 @@
             await camera.start();
             placeholder.classList.add('is-hidden');
             stopButton.disabled = false;
-            setStatus('Kamera aktif · 1 tangan dikesan', true);
+            setStatus('Kamera aktif · menunggu tangan', true);
             feedbackMessage.textContent = `Bentuk isyarat ${target} dan tahan`;
             practiceState.innerHTML = '<i class="bi bi-hand-index-thumb"></i> Sedang mencuba';
         } catch (error) {
