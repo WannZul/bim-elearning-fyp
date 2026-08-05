@@ -1,206 +1,61 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id'])) { 
-    header("Location: ../login.php"); 
-    exit(); 
+require_once __DIR__ . '/../includes/app.php';
+requireAuth('../login.php');
+
+$allowedTargets = ['A', '1', '2', '3', '4', '5'];
+$initialTarget = strtoupper((string) ($_GET['target'] ?? 'A'));
+if (!in_array($initialTarget, $allowedTargets, true)) {
+    $initialTarget = 'A';
 }
+
+$pageTitle = 'Studio Latihan AI';
+$basePath = '../';
+$activePage = 'practice';
+include __DIR__ . '/../includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="ms">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Hand Tracking - BIM E-Learning</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- MediaPipe Hands & Camera Utils CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<div class="page-shell">
+    <div class="container-wide">
+        <header class="page-intro" data-reveal>
+            <div><span class="eyebrow">Latihan berasaskan kamera</span><h1 class="page-title">Studio Latihan AI</h1><p>Tunjukkan isyarat statik di hadapan kamera. MediaPipe memetakan 21 titik tangan dan Fingerpose membantu mengelaskan kedudukan jari anda.</p></div>
+            <span class="ai-intro-badge"><span class="pulse-dot"></span> Pemprosesan dalam pelayar</span>
+        </header>
 
-    <style>
-        body { background-color: #f8f9fa; }
-        .video-container {
-            position: relative;
-            width: 100%;
-            max-width: 640px;
-            margin: auto;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            background: #000;
-        }
-        #input_video {
-            width: 100%;
-            height: auto;
-            transform: scaleX(-1); /* Mirror effect macam cermin */
-        }
-        #output_canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            transform: scaleX(-1); /* Mirror effect untuk lukisan tangan juga */
-        }
-        .status-box {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            margin-top: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        #gesture-result {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #0d6efd;
-            min-height: 60px;
-        }
-    </style>
-</head>
-<body>
-
-    <nav class="navbar navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="../index.php">← Kembali ke Dashboard</a>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        <h2 class="text-center mb-3">🤖 AI Hand Tracking (Proof of Concept)</h2>
-        <p class="text-center text-muted">Sila benarkan akses webcam. Cuba buat isyarat <strong>A (Kepalan), 1, 2, 3, 4, atau 5 (Tapak Tangan)</strong>.</p>
-
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <!-- Paparan Webcam -->
-                <div class="video-container">
-                    <video id="input_video" autoplay playsinline></video>
-                    <canvas id="output_canvas"></canvas>
+        <div class="ai-layout">
+            <section class="camera-card surface-card" data-reveal aria-label="Paparan kamera latihan">
+                <div class="camera-topbar"><div class="camera-status"><span class="camera-status-dot" id="camera-status-dot"></span><span id="ai-status" aria-live="polite">Kamera belum dimulakan</span></div><div class="camera-actions"><button class="camera-icon-button" id="stop-camera" type="button" title="Hentikan kamera" aria-label="Hentikan kamera" disabled><i class="bi bi-stop-fill"></i></button></div></div>
+                <div class="camera-stage">
+                    <video id="input_video" playsinline muted aria-label="Paparan kamera anda"></video>
+                    <canvas id="output_canvas" width="640" height="480" aria-label="Titik pengesanan tangan"></canvas>
+                    <div class="camera-guide" aria-hidden="true"></div>
+                    <div class="camera-placeholder" id="camera-placeholder">
+                        <div><div class="placeholder-icon"><i class="bi bi-camera-video"></i></div><h2>Sedia untuk berlatih?</h2><p>Benarkan akses kamera, letakkan satu tangan di dalam bingkai, dan tahan isyarat selama kira-kira dua saat.</p><button class="btn-primary-custom" id="start-camera" type="button"><i class="bi bi-camera-video"></i> Mulakan kamera</button></div>
+                    </div>
                 </div>
+                <div class="camera-feedback" aria-live="polite"><div class="detected-sign" id="gesture-result">—</div><div class="feedback-copy"><span>Isyarat dikesan</span><strong id="feedback-message">Menunggu kamera</strong></div><div class="confidence-block"><span id="confidence-label">Kestabilan 0%</span><div class="confidence-track"><div class="confidence-fill" id="confidence-fill"></div></div></div></div>
+            </section>
 
-                <!-- Status & Result -->
-                <div class="status-box">
-                    <h5>Status AI:</h5>
-                    <p id="ai-status" class="text-warning">Sedang memuatkan model AI...</p>
-                    <hr>
-                    <h5>Isyarat Dikesan:</h5>
-                    <div id="gesture-result">-</div>
-                </div>
-            </div>
+            <aside class="practice-panel">
+                <section class="target-card surface-card" data-reveal>
+                    <div class="target-card-header"><span>Sasaran latihan</span><span class="tag teal" id="practice-state"><i class="bi bi-hourglass-split"></i> Belum bermula</span></div>
+                    <div class="target-display"><strong id="target-symbol"><?= e($initialTarget) ?></strong></div>
+                    <h2 id="target-title"><?= $initialTarget === 'A' ? 'Huruf A' : 'Nombor ' . e($initialTarget) ?></h2><p id="target-instruction">Bentuk isyarat dengan jelas dan tahan sehingga sistem mengesahkannya.</p>
+                    <div class="target-selector" aria-label="Pilih isyarat sasaran">
+                        <?php foreach ($allowedTargets as $target): ?><button class="target-button <?= $target === $initialTarget ? 'active' : '' ?>" type="button" data-target="<?= e($target) ?>" aria-pressed="<?= $target === $initialTarget ? 'true' : 'false' ?>"><?= e($target) ?></button><?php endforeach; ?>
+                    </div>
+                </section>
+                <section class="instruction-card surface-card" data-reveal><h3>Cara mendapatkan bacaan terbaik</h3><div class="instruction-list"><div class="instruction-step"><span>1</span><p>Pastikan seluruh tangan berada dalam bingkai panduan.</p></div><div class="instruction-step"><span>2</span><p>Hadapkan tapak tangan kepada kamera dan elakkan latar yang sibuk.</p></div><div class="instruction-step"><span>3</span><p>Tahan isyarat dengan stabil sehingga pengesahan muncul.</p></div></div></section>
+                <div class="privacy-note"><i class="bi bi-shield-lock-fill"></i><span>Video kamera tidak dimuat naik atau disimpan. Semua pengesanan berlaku terus dalam pelayar anda.</span></div>
+            </aside>
         </div>
     </div>
-
-    <!-- JavaScript untuk MediaPipe & Gesture Recognition -->
-    <script>
-        const videoElement = document.getElementById('input_video');
-        const canvasElement = document.getElementById('output_canvas');
-        const canvasCtx = canvasElement.getContext('2d');
-        const statusText = document.getElementById('ai-status');
-        const resultText = document.getElementById('gesture-result');
-
-        // FUNGSI: Kira jari dan detect isyarat BIM
-        function detectBIMGesture(landmarks) {
-            let fingersUp = 0;
-
-            // 1. Kira 4 jari (Index, Middle, Ring, Pinky)
-            // Bandingkan koordinat Y hujung jari (Tip) dengan sendi (PIP)
-            if (landmarks[8].y < landmarks[6].y) fingersUp++;  // Index
-            if (landmarks[12].y < landmarks[10].y) fingersUp++; // Middle
-            if (landmarks[16].y < landmarks[14].y) fingersUp++; // Ring
-            if (landmarks[20].y < landmarks[18].y) fingersUp++; // Pinky
-
-            // 2. Kira Ibu Jari (Thumb)
-            // Bandingkan koordinat X hujung ibu jari (4) dengan sendi (3)
-            // Logik ini direka untuk Tangan Kanan (Right Hand)
-            let thumbOpen = false;
-            if (landmarks[4].x < landmarks[3].x) { 
-                thumbOpen = true; 
-            }
-
-            // 3. Logik Pengecaman Isyarat BIM (Mapping)
-            if (fingersUp === 0 && !thumbOpen) {
-                return " A (Kepalan)";
-            } else if (fingersUp === 1 && landmarks[8].y < landmarks[6].y) {
-                return "☝️ 1 (Satu)";
-            } else if (fingersUp === 2) {
-                return "✌️ 2 (Dua)";
-            } else if (fingersUp === 3) {
-                return "🤟 3 (Tiga)";
-            } else if (fingersUp === 4 && !thumbOpen) {
-                return "🖖 4 (Empat)";
-            } else if (fingersUp === 4 && thumbOpen) {
-                return "🖐️ 5 (Lima)";
-            } else {
-                return " Isyarat Lain / Belum Dikaji";
-            }
-        }
-
-        // Fungsi bila MediaPipe detect tangan
-        function onResults(results) {
-            canvasElement.width = videoElement.videoWidth;
-            canvasElement.height = videoElement.videoHeight;
-
-            canvasCtx.save();
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                statusText.innerText = "✅ Tangan dikesan!";
-                statusText.className = "text-success";
-
-                for (const landmarks of results.multiHandLandmarks) {
-                    // Lukis skeleton tangan
-                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 3});
-                    drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1});
-
-                    // Panggil fungsi detect isyarat
-                    const gesture = detectBIMGesture(landmarks);
-                    resultText.innerText = gesture;
-                }
-
-            } else {
-                statusText.innerText = "️ Tiada tangan dikesan. Sila angkat tangan.";
-                statusText.className = "text-danger";
-                resultText.innerText = "-";
-            }
-            canvasCtx.restore();
-        }
-
-        // Setup MediaPipe Hands
-        const hands = new Hands({locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-        }});
-
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.5
-        });
-
-        hands.onResults(onResults);
-
-        // Setup Camera
-        const camera = new Camera(videoElement, {
-            onFrame: async () => {
-                await hands.send({image: videoElement});
-            },
-            width: 640,
-            height: 480
-        });
-        
-        // Mula camera
-        camera.start().then(() => {
-            statusText.innerText = "✅ Kamera aktif & AI sedia!";
-            statusText.className = "text-success";
-        }).catch(err => {
-            statusText.innerText = " Gagal akses kamera. Sila check permission browser.";
-            statusText.className = "text-danger";
-            console.error(err);
-        });
-    </script>
-</body>
-</html>
+</div>
+<?php
+$pageScripts = <<<'HTML'
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/fingerpose@0.1.0/dist/fingerpose.min.js" crossorigin="anonymous"></script>
+<script src="../assets/js/ai-tracking.js"></script>
+HTML;
+include __DIR__ . '/../includes/footer.php';
+?>
