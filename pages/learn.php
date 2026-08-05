@@ -8,7 +8,7 @@ $lessons = [
     ['symbol' => '2', 'title' => 'Nombor Dua', 'description' => 'Angkat jari telunjuk dan jari tengah, kemudian genggam jari yang lain.', 'tip' => 'Dua jari direnggangkan', 'group' => 'nombor'],
     ['symbol' => '3', 'title' => 'Nombor Tiga', 'description' => 'Angkat tiga jari tengah secara jelas dengan tangan dalam kedudukan stabil.', 'tip' => 'Pastikan semua jari terlihat', 'group' => 'nombor'],
     ['symbol' => '4', 'title' => 'Nombor Empat', 'description' => 'Angkat empat jari bersama-sama dan lipat ibu jari ke arah tapak tangan.', 'tip' => 'Empat jari selari', 'group' => 'nombor'],
-    ['symbol' => '5', 'title' => 'Nombor Lima', 'description' => 'Buka kelima-lima jari dengan tapak tangan jelas menghadap kamera.', 'tip' => 'Jari terbuka dan santai', 'group' => 'nombor'],
+    ['symbol' => '5', 'title' => 'Nombor Lima', 'description' => 'Buka kelima-lima jari dengan tapak tangan jelas menghadap kamera.', 'tip' => 'Jari terbuka dan santai', 'group' => 'nombor', 'ai_enabled' => false],
 ];
 
 $pageTitle = 'Pusat Pembelajaran';
@@ -25,8 +25,8 @@ include __DIR__ . '/../includes/header.php';
 
         <section class="learn-summary">
             <article class="path-card surface-card" data-reveal>
-                <span class="tag teal"><i class="bi bi-compass"></i> Laluan permulaan</span><h2>Abjad & nombor asas</h2><p>Enam isyarat statik yang membina koordinasi tangan dan keyakinan sebelum meneroka kosa kata BIM yang lebih luas.</p>
-                <div class="path-progress"><span class="tag teal"><i class="bi bi-collection-play"></i> 6 pelajaran tersedia</span><span class="tag"><i class="bi bi-camera-video"></i> Boleh dilatih dengan AI</span></div>
+                <span class="tag teal"><i class="bi bi-compass"></i> Laluan permulaan</span><h2>Abjad & nombor asas</h2><p>Enam bahan asas yang membina koordinasi tangan dan keyakinan untuk kegunaan harian serta perkhidmatan pelanggan.</p>
+                <div class="path-progress"><span class="tag teal"><i class="bi bi-collection-play"></i> 6 pelajaran tersedia</span><span class="tag"><i class="bi bi-camera-video"></i> 5 isyarat disahkan AI</span></div>
             </article>
             <aside class="guidance-card surface-card" data-reveal><div class="icon-tile coral"><i class="bi bi-brightness-high"></i></div><div><h3>Sebelum anda bermula</h3><p>Gunakan tangan dominan, pastikan pencahayaan datang dari hadapan, dan kekalkan tangan pada paras dada.</p></div></aside>
         </section>
@@ -38,12 +38,12 @@ include __DIR__ . '/../includes/header.php';
             <?php foreach ($lessons as $index => $lesson): ?>
             <article class="lesson-card surface-card card-hover" data-lesson-group="<?= e($lesson['group']) ?>" data-reveal>
                 <div class="lesson-visual"><span class="lesson-index">PELAJARAN <?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></span><div class="lesson-symbol-large"><?= e($lesson['symbol']) ?></div></div>
-                <div class="lesson-content"><h3><?= e($lesson['title']) ?></h3><p><?= e($lesson['description']) ?></p><div class="lesson-footer"><span class="lesson-tip"><i class="bi bi-hand-index-thumb"></i> <?= e($lesson['tip']) ?></span><a class="btn-light-custom btn-sm-custom btn-icon" href="ai_tracking.php?target=<?= urlencode($lesson['symbol']) ?>" aria-label="Latih <?= e($lesson['title']) ?>"><i class="bi bi-play-fill"></i></a></div></div>
+                <div class="lesson-content"><h3><?= e($lesson['title']) ?></h3><p><?= e($lesson['description']) ?></p><div class="lesson-footer"><span class="lesson-tip"><i class="bi bi-hand-index-thumb"></i> <?= e($lesson['tip']) ?></span><?php if (($lesson['ai_enabled'] ?? true) === true): ?><a class="btn-light-custom btn-sm-custom btn-icon" href="ai_tracking.php?target=<?= urlencode($lesson['symbol']) ?>" aria-label="Latih <?= e($lesson['title']) ?> dengan AI"><i class="bi bi-play-fill"></i></a><?php else: ?><span class="tag"><i class="bi bi-book"></i> Bahan rujukan</span><?php endif; ?></div></div>
             </article>
             <?php endforeach; ?>
         </section>
 
-        <section class="lesson-cta surface-card" data-reveal><div><h2>Sudah bersedia untuk mencuba?</h2><p>Pilih satu isyarat dan lihat bagaimana MediaPipe bersama Fingerpose membaca bentuk tangan anda.</p></div><a class="btn-secondary-custom" href="ai_tracking.php"><i class="bi bi-camera-video"></i> Buka Studio AI</a></section>
+        <section class="lesson-cta surface-card" data-reveal><div><h2>Sudah bersedia untuk mencuba?</h2><p>Uji lima isyarat statik terpilih—A dan nombor 1 hingga 4—menggunakan MediaPipe bersama Fingerpose.</p></div><a class="btn-secondary-custom" href="ai_tracking.php"><i class="bi bi-camera-video"></i> Buka Studio AI</a></section>
         <p class="text-muted-custom mt-3 small"><i class="bi bi-info-circle me-1"></i> Panduan visual ini ialah bahan prototaip FYP dan perlu disahkan dengan rujukan BIM atau tenaga pengajar bertauliah sebelum penggunaan rasmi.</p>
     </div>
 </div>

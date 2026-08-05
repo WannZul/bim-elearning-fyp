@@ -62,7 +62,6 @@
         makeNumberGesture('2', [Finger.Index, Finger.Middle]),
         makeNumberGesture('3', [Finger.Index, Finger.Middle, Finger.Ring]),
         makeNumberGesture('4', [Finger.Index, Finger.Middle, Finger.Ring, Finger.Pinky]),
-        makeNumberGesture('5', fingers),
     ]);
 
     let camera = null;
@@ -146,7 +145,7 @@
         if (pattern === '1000') return '1';
         if (pattern === '1100') return '2';
         if (pattern === '1110') return '3';
-        if (pattern === '1111') return thumbRaised ? '5' : '4';
+        if (pattern === '1111' && !thumbRaised) return '4';
         return null;
     };
 

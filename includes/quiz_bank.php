@@ -21,14 +21,6 @@ function quizThemes(): array
             'accent' => 'blue',
             'duration' => '60 saat',
         ],
-        'animals' => [
-            'title' => 'Tema Haiwan',
-            'short_title' => 'Haiwan',
-            'description' => 'Padankan ciri visual haiwan dengan petunjuk isyarat yang mudah diingati.',
-            'icon' => 'bi-github',
-            'accent' => 'coral',
-            'duration' => '60 saat',
-        ],
     ];
 }
 
@@ -54,16 +46,6 @@ function quizQuestionBank(): array
             ['id' => 'alpha-06', 'question' => 'Apakah langkah pertama apabila bentuk huruf tidak dikenali?', 'options' => ['A' => 'Semak kedudukan setiap jari', 'B' => 'Tukar akaun', 'C' => 'Tambah masa kuiz', 'D' => 'Gunakan tiga tangan'], 'correct' => 'A', 'explanation' => 'Bandingkan bentuk tangan dengan panduan dan betulkan jari satu demi satu.'],
             ['id' => 'alpha-07', 'question' => 'Huruf A dan nombor yang menggunakan jari terbuka dibezakan terutamanya oleh…', 'options' => ['A' => 'Bentuk bukaan jari', 'B' => 'Nama pengguna', 'C' => 'Saiz skrin', 'D' => 'Masa log masuk'], 'correct' => 'A', 'explanation' => 'Huruf A ialah genggaman, manakala nombor menggunakan corak jari lurus tertentu.'],
             ['id' => 'alpha-08', 'question' => 'Mengapa perlu menahan bentuk huruf seketika semasa latihan AI?', 'options' => ['A' => 'Supaya sistem mendapat beberapa bacaan stabil', 'B' => 'Supaya kamera mengambil gambar', 'C' => 'Untuk menghentikan masa', 'D' => 'Untuk menyimpan video'], 'correct' => 'A', 'explanation' => 'Beberapa bacaan yang konsisten mengurangkan keputusan yang berkelip atau tersalah.'],
-        ],
-        'animals' => [
-            ['id' => 'animal-01', 'question' => 'Ciri visual “telinga panjang” paling mudah mengingatkan kita kepada haiwan…', 'options' => ['A' => 'Arnab', 'B' => 'Ikan', 'C' => 'Gajah', 'D' => 'Kucing'], 'correct' => 'A', 'explanation' => 'Telinga panjang ialah petunjuk visual yang kuat untuk mengingati konsep arnab.'],
-            ['id' => 'animal-02', 'question' => 'Haiwan manakah paling berkait dengan petunjuk visual “belalai”?', 'options' => ['A' => 'Burung', 'B' => 'Gajah', 'C' => 'Arnab', 'D' => 'Ikan'], 'correct' => 'B', 'explanation' => 'Belalai ialah ciri utama gajah dan boleh digunakan sebagai bantuan ingatan visual.'],
-            ['id' => 'animal-03', 'question' => 'Petunjuk “misai di kedua-dua sisi muka” merujuk kepada…', 'options' => ['A' => 'Kucing', 'B' => 'Buaya', 'C' => 'Burung', 'D' => 'Gajah'], 'correct' => 'A', 'explanation' => 'Misai ialah ciri visual yang biasa dikaitkan dengan kucing.'],
-            ['id' => 'animal-04', 'question' => 'Bentuk seperti paruh paling sesuai menjadi petunjuk untuk…', 'options' => ['A' => 'Ikan', 'B' => 'Arnab', 'C' => 'Burung', 'D' => 'Kucing'], 'correct' => 'C', 'explanation' => 'Paruh ialah ciri khas burung yang mudah digunakan sebagai kaitan visual.'],
-            ['id' => 'animal-05', 'question' => 'Haiwan air manakah paling berkait dengan petunjuk “sirip”?', 'options' => ['A' => 'Gajah', 'B' => 'Ikan', 'C' => 'Arnab', 'D' => 'Burung'], 'correct' => 'B', 'explanation' => 'Sirip membantu kita mengaitkan petunjuk visual dengan ikan.'],
-            ['id' => 'animal-06', 'question' => 'Apakah tujuan menggunakan ciri fizikal haiwan ketika menghafal isyarat?', 'options' => ['A' => 'Membina kaitan visual yang mudah diingat', 'B' => 'Menggantikan rujukan BIM rasmi', 'C' => 'Menambah kelajuan kamera', 'D' => 'Menyimpan video'], 'correct' => 'A', 'explanation' => 'Kaitan visual membantu ingatan, tetapi bentuk isyarat sebenar tetap perlu disahkan dengan sumber BIM.'],
-            ['id' => 'animal-07', 'question' => 'Sebelum menambah isyarat haiwan ke modul rasmi, apakah tindakan paling tepat?', 'options' => ['A' => 'Reka bentuk sendiri', 'B' => 'Sahkan dengan rujukan BIM atau pengajar', 'C' => 'Salin sebarang video', 'D' => 'Gunakan gerak rawak'], 'correct' => 'B', 'explanation' => 'Ketepatan bahasa penting; kandungan hendaklah disahkan oleh sumber BIM yang boleh dipercayai.'],
-            ['id' => 'animal-08', 'question' => 'Untuk kuiz isyarat statik, contoh rujukan visual perlu menunjukkan…', 'options' => ['A' => 'Satu bentuk tangan yang jelas', 'B' => 'Video panjang tanpa henti', 'C' => 'Pergerakan seluruh badan', 'D' => 'Latar yang gelap'], 'correct' => 'A', 'explanation' => 'Skop projek ini menilai bentuk tangan statik, jadi rujukan perlu jelas dan tidak bergantung pada urutan gerakan.'],
         ],
     ];
 }

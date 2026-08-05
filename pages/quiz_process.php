@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/app.php';
 requireAuth('../login.php');
 require_once __DIR__ . '/../includes/db_connect.php';
+require_once __DIR__ . '/../includes/database_schema.php';
 require_once __DIR__ . '/../includes/quiz_bank.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -67,7 +68,15 @@ foreach ($questions as $question) {
 $serverElapsed = max(0.0, $now - (float) $attempt['started_at']);
 $timeTaken = min(60, (int) floor($serverElapsed));
 $userId = (int) $_SESSION['user_id'];
-$insert = mysqli_prepare($conn, 'INSERT INTO quiz_scores (user_id, score, time_taken) VALUES (?, ?, ?)');
+
+if (!quizTypeStorageReady($conn)) {
+    unset($_SESSION['quiz_attempts'][$postedToken]);
+    setFlash('error', quizTypeMigrationMessage());
+    header('Location: quiz.php');
+    exit;
+}
+
+$insert = mysqli_prepare($conn, 'INSERT INTO quiz_scores (user_id, score, time_taken, quiz_type) VALUES (?, ?, ?, ?)');
 
 if (!$insert) {
     unset($_SESSION['quiz_attempts'][$postedToken]);
@@ -76,7 +85,7 @@ if (!$insert) {
     exit;
 }
 
-mysqli_stmt_bind_param($insert, 'iii', $userId, $score, $timeTaken);
+mysqli_stmt_bind_param($insert, 'iiis', $userId, $score, $timeTaken, $themeKey);
 $saved = mysqli_stmt_execute($insert);
 mysqli_stmt_close($insert);
 unset($_SESSION['quiz_attempts'][$postedToken]);
