@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/app.php';
 requireAuth('../login.php');
 require_once __DIR__ . '/../includes/db_connect.php';
+require_once __DIR__ . '/../includes/quiz_bank.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: quiz.php');
@@ -10,51 +11,60 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $postedToken = (string) ($_POST['attempt_token'] ?? '');
 $attempt = $_SESSION['quiz_attempts'][$postedToken] ?? null;
+$now = microtime(true);
 
 if (!verifyCsrf($_POST['csrf_token'] ?? null)
     || !is_array($attempt)
-    || microtime(true) > (float) ($attempt['expires_at'] ?? 0)) {
+    || $now > (float) ($attempt['answer_deadline'] ?? 0)) {
     unset($_SESSION['quiz_attempts'][$postedToken]);
     setFlash('error', 'Sesi kuiz tidak sah atau telah tamat. Sila mulakan semula.');
     header('Location: quiz.php');
     exit;
 }
 
-$questionIds = array_values(array_filter(array_map('intval', $attempt['question_ids'] ?? []), static fn(int $id): bool => $id > 0));
-if (!$questionIds) {
+$themeKey = (string) ($attempt['theme'] ?? '');
+$themes = quizThemes();
+$theme = $themes[$themeKey] ?? null;
+$questionIds = array_values(array_filter($attempt['question_ids'] ?? [], 'is_string'));
+$questions = quizQuestionsByIds($themeKey, $questionIds);
+
+if (!$theme || count($questions) !== 5 || count($questionIds) !== 5) {
     unset($_SESSION['quiz_attempts'][$postedToken]);
     setFlash('error', 'Soalan kuiz tidak dapat disahkan. Sila cuba lagi.');
     header('Location: quiz.php');
     exit;
 }
 
-$safeIds = implode(',', $questionIds);
-$query = mysqli_query($conn, "SELECT id, correct_answer FROM quiz_questions WHERE id IN ($safeIds)");
+$postedAnswers = is_array($_POST['q'] ?? null) ? $_POST['q'] : [];
 $score = 0;
 $answered = 0;
-$answerKeysFound = 0;
+$reviewItems = [];
 
-if ($query) {
-    while ($question = mysqli_fetch_assoc($query)) {
-        $answerKeysFound++;
-        $answer = strtoupper((string) ($_POST['q' . (int) $question['id']] ?? ''));
-        if (in_array($answer, ['A', 'B', 'C', 'D'], true)) {
-            $answered++;
-            if (hash_equals(strtoupper((string) $question['correct_answer']), $answer)) {
-                $score += 10;
-            }
-        }
+foreach ($questions as $question) {
+    $selectedLetter = strtoupper((string) ($postedAnswers[$question['id']] ?? ''));
+    if (!array_key_exists($selectedLetter, $question['options'])) {
+        $selectedLetter = '';
     }
+
+    $isCorrect = $selectedLetter !== '' && hash_equals($question['correct'], $selectedLetter);
+    if ($selectedLetter !== '') {
+        $answered++;
+    }
+    if ($isCorrect) {
+        $score += 10;
+    }
+
+    $reviewItems[] = [
+        'question' => $question['question'],
+        'options' => $question['options'],
+        'selected' => $selectedLetter,
+        'correct' => $question['correct'],
+        'is_correct' => $isCorrect,
+        'explanation' => $question['explanation'],
+    ];
 }
 
-if (!$query || $answerKeysFound !== count($questionIds)) {
-    unset($_SESSION['quiz_attempts'][$postedToken]);
-    setFlash('error', 'Jawapan kuiz tidak dapat disahkan. Sila mulakan semula.');
-    header('Location: quiz.php');
-    exit;
-}
-
-$serverElapsed = max(0.0, microtime(true) - (float) $attempt['started_at']);
+$serverElapsed = max(0.0, $now - (float) $attempt['started_at']);
 $timeTaken = min(60, (int) floor($serverElapsed));
 $userId = (int) $_SESSION['user_id'];
 $insert = mysqli_prepare($conn, 'INSERT INTO quiz_scores (user_id, score, time_taken) VALUES (?, ?, ?)');
@@ -62,7 +72,7 @@ $insert = mysqli_prepare($conn, 'INSERT INTO quiz_scores (user_id, score, time_t
 if (!$insert) {
     unset($_SESSION['quiz_attempts'][$postedToken]);
     setFlash('error', 'Skor tidak dapat disimpan. Sila cuba lagi.');
-    header('Location: quiz.php');
+    header('Location: quiz.php?theme=' . urlencode($themeKey));
     exit;
 }
 
@@ -73,16 +83,24 @@ unset($_SESSION['quiz_attempts'][$postedToken]);
 
 if (!$saved) {
     setFlash('error', 'Skor tidak dapat disimpan. Sila cuba lagi.');
-    header('Location: quiz.php');
+    header('Location: quiz.php?theme=' . urlencode($themeKey));
     exit;
 }
 
-$_SESSION['last_quiz_result'] = [
+$resultToken = bin2hex(random_bytes(16));
+$storedResults = $_SESSION['quiz_results'] ?? [];
+$storedResults = array_filter($storedResults, static fn(array $result): bool => (int) ($result['expires_at'] ?? 0) >= time());
+$storedResults[$resultToken] = [
+    'theme_key' => $themeKey,
+    'theme_title' => $theme['title'],
     'score' => $score,
     'time_taken' => $timeTaken,
     'answered' => $answered,
-    'total' => count($questionIds),
+    'total' => count($questions),
+    'items' => $reviewItems,
+    'expires_at' => time() + 1800,
 ];
-setFlash('success', 'Cabaran selesai! Keputusan anda telah direkodkan.');
-header('Location: leaderboard.php');
+$_SESSION['quiz_results'] = array_slice($storedResults, -5, null, true);
+
+header('Location: quiz_review.php?result=' . urlencode($resultToken));
 exit;

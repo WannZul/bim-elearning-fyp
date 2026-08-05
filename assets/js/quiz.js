@@ -4,22 +4,22 @@
     const form = document.getElementById('quizForm');
     const timer = document.getElementById('timer');
     const timerPill = document.getElementById('timer-pill');
-    const timeInput = document.getElementById('time_taken');
     const answeredCount = document.getElementById('answered-count');
 
-    if (!form || !timer || !timeInput) return;
+    if (!form || !timer) return;
 
-    const deadlineMs = Number(form.dataset.deadlineMs);
-    let remaining = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
+    const initialRemainingMs = Math.max(0, Number(form.dataset.remainingMs || 60000));
+    const deadline = performance.now() + initialRemainingMs;
+    let remainingSeconds = Math.ceil(initialRemainingMs / 1000);
     let submitted = false;
 
     const renderTimer = () => {
-        remaining = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
-        const minutes = Math.floor(remaining / 60);
-        const seconds = remaining % 60;
+        const remainingMs = Math.max(0, deadline - performance.now());
+        remainingSeconds = Math.ceil(remainingMs / 1000);
+        const minutes = Math.floor(remainingSeconds / 60);
+        const seconds = remainingSeconds % 60;
         timer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        timeInput.value = String(Math.max(0, 60 - remaining));
-        timerPill?.classList.toggle('warning', remaining <= 10);
+        timerPill?.classList.toggle('warning', remainingSeconds <= 10);
     };
 
     const updateAnswered = () => {
@@ -32,15 +32,17 @@
         if (answeredCount) answeredCount.textContent = String(count);
     };
 
+    const lockSubmitButton = () => {
+        const button = form.querySelector('button[type="submit"]');
+        if (!button) return;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Menyemak jawapan...';
+    };
+
     form.addEventListener('change', updateAnswered);
     form.addEventListener('submit', () => {
         submitted = true;
-        timeInput.value = String(Math.max(0, 60 - remaining));
-        const button = form.querySelector('button[type="submit"]');
-        if (button) {
-            button.disabled = true;
-            button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Mengira skor...';
-        }
+        lockSubmitButton();
     });
 
     renderTimer();
@@ -49,11 +51,13 @@
             window.clearInterval(countdown);
             return;
         }
+
         renderTimer();
-        if (remaining <= 0) {
+        if (remainingSeconds <= 1) {
             window.clearInterval(countdown);
             submitted = true;
+            lockSubmitButton();
             form.submit();
         }
-    }, 1000);
+    }, 250);
 })();
