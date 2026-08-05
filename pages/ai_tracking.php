@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../includes/app.php';
 requireAuth('../login.php');
 
-$allowedTargets = ['A', '1', '2', '3', '4', '5'];
+$allowedTargets = ['A', '1', '2', '3', '4'];
 $initialTarget = strtoupper((string) ($_GET['target'] ?? 'A'));
 if (!in_array($initialTarget, $allowedTargets, true)) {
     $initialTarget = 'A';
@@ -16,7 +16,7 @@ include __DIR__ . '/../includes/header.php';
 <div class="page-shell">
     <div class="container-wide">
         <header class="page-intro" data-reveal>
-            <div><span class="eyebrow">Latihan berasaskan kamera</span><h1 class="page-title">Studio Latihan AI</h1><p>Tunjukkan isyarat statik di hadapan kamera. MediaPipe memetakan 21 titik tangan dan Fingerpose membantu mengelaskan kedudukan jari anda.</p></div>
+            <div><span class="eyebrow">Latihan berasaskan kamera</span><h1 class="page-title">Studio Latihan AI</h1><p>Proof of concept ini mengesahkan lima isyarat statik sahaja: A dan nombor 1 hingga 4. MediaPipe memetakan 21 titik tangan dan Fingerpose membantu mengelaskan kedudukan jari.</p></div>
             <span class="ai-intro-badge"><span class="pulse-dot"></span> Pemprosesan dalam pelayar</span>
         </header>
 
