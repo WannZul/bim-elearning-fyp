@@ -1,6 +1,12 @@
 (() => {
     'use strict';
 
+    const messages = window.BIM_I18N || {};
+    const formatMessage = (key, params = {}) => Object.entries(params).reduce(
+        (message, [name, value]) => message.replaceAll(`:${name}`, String(value)),
+        messages[key] || '',
+    );
+
     const video = document.getElementById('input_video');
     const canvas = document.getElementById('output_canvas');
     const context = canvas?.getContext('2d');
@@ -18,8 +24,8 @@
     const practiceState = document.getElementById('practice-state');
 
     if (!video || !canvas || !context || typeof Hands === 'undefined' || typeof fp === 'undefined') {
-        if (statusText) statusText.textContent = 'Komponen AI gagal dimuatkan';
-        if (feedbackMessage) feedbackMessage.textContent = 'Semak sambungan internet dan muat semula halaman';
+        if (statusText) statusText.textContent = messages['ai.js.load_failed'] || '';
+        if (feedbackMessage) feedbackMessage.textContent = messages['ai.js.reload'] || '';
         return;
     }
 
@@ -77,14 +83,14 @@
         statusDot.classList.toggle('live', isLive);
     };
 
-    const resetFeedback = (message = 'Tunjukkan satu tangan dalam bingkai') => {
+    const resetFeedback = (message = messages['ai.js.show_hand'] || '') => {
         recentGestures = [];
         stableSince = null;
         completedTarget = false;
         practiceState.classList.remove('teal');
         gestureResult.textContent = '—';
         feedbackMessage.textContent = message;
-        confidenceLabel.textContent = 'Kestabilan 0%';
+        confidenceLabel.textContent = messages['ai.js.stability_zero'] || '';
         confidenceFill.style.width = '0%';
     };
 
@@ -93,14 +99,14 @@
         completedTarget = false;
         stableSince = null;
         targetSymbol.textContent = target;
-        targetTitle.textContent = target === 'A' ? 'Huruf A' : `Nombor ${target}`;
-        practiceState.innerHTML = '<i class="bi bi-hourglass-split"></i> Menunggu isyarat';
+        targetTitle.textContent = target === 'A' ? messages['ai.js.title_A'] : formatMessage('ai.js.title_number', { target });
+        practiceState.innerHTML = `<i class="bi bi-hourglass-split"></i> ${messages['ai.js.waiting_sign'] || ''}`;
         document.querySelectorAll('[data-target]').forEach((button) => {
             const isActive = button.dataset.target === target;
             button.classList.toggle('active', isActive);
             button.setAttribute('aria-pressed', String(isActive));
         });
-        resetFeedback(running ? `Bentuk isyarat ${target} dan tahan` : 'Mulakan kamera untuk berlatih');
+        resetFeedback(running ? formatMessage('ai.js.form_hold', { target }) : messages['ai.js.start_to_practice']);
         const url = new URL(window.location.href);
         url.searchParams.set('target', target);
         window.history.replaceState({}, '', url);
@@ -182,7 +188,7 @@
 
         const match = classifyGesture(landmarks);
         if (!match) {
-            resetFeedback('Bentuk belum dikenali — laraskan kedudukan tangan');
+            resetFeedback(messages['ai.js.unrecognized'] || '');
             return;
         }
 
@@ -196,26 +202,28 @@
 
         gestureResult.textContent = match.name;
         confidenceLabel.textContent = hasEnoughSamples
-            ? `Padanan ${fingerposeConfidence}% · stabil ${stability}%`
-            : `Menstabilkan ${recentGestures.length}/6`;
+            ? formatMessage('ai.js.match', { confidence: fingerposeConfidence, stability })
+            : formatMessage('ai.js.stabilizing', { count: recentGestures.length });
         confidenceFill.style.width = `${hasEnoughSamples ? Math.min(fingerposeConfidence, stability) : (recentGestures.length / 6) * 100}%`;
 
         if (match.name === target && hasEnoughSamples && stability >= 70) {
             stableSince ??= performance.now();
             const heldMs = performance.now() - stableSince;
             const holdProgress = Math.min(100, Math.round((heldMs / requiredHoldMs) * 100));
-            feedbackMessage.textContent = `Bagus! Kekalkan isyarat ${target}... ${holdProgress}%`;
-            practiceState.innerHTML = '<i class="bi bi-stars"></i> Hampir berjaya';
+            feedbackMessage.textContent = formatMessage('ai.js.keep', { target, progress: holdProgress });
+            practiceState.innerHTML = `<i class="bi bi-stars"></i> ${messages['ai.js.almost'] || ''}`;
             if (heldMs >= requiredHoldMs && !completedTarget) {
                 completedTarget = true;
-                feedbackMessage.textContent = `Hebat! Isyarat ${target} disahkan.`;
-                practiceState.innerHTML = '<i class="bi bi-check-circle-fill"></i> Berjaya';
+                feedbackMessage.textContent = formatMessage('ai.js.confirmed', { target });
+                practiceState.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${messages['ai.js.success'] || ''}`;
                 practiceState.classList.add('teal');
             }
         } else {
             stableSince = null;
-            feedbackMessage.textContent = match.name === target ? 'Stabilkan tangan anda seketika' : `Dikesan ${match.name} — sasaran anda ialah ${target}`;
-            practiceState.innerHTML = '<i class="bi bi-hand-index-thumb"></i> Sedang mencuba';
+            feedbackMessage.textContent = match.name === target
+                ? messages['ai.js.steady'] || ''
+                : formatMessage('ai.js.mismatch', { detected: match.name, target });
+            practiceState.innerHTML = `<i class="bi bi-hand-index-thumb"></i> ${messages['ai.js.trying'] || ''}`;
         }
     };
 
@@ -225,7 +233,7 @@
 
     const startCamera = async () => {
         if (running) return;
-        setStatus('Meminta kebenaran kamera...');
+        setStatus(messages['ai.js.requesting'] || '');
         startButton.disabled = true;
         try {
             camera = new Camera(video, {
@@ -237,14 +245,14 @@
             await camera.start();
             placeholder.classList.add('is-hidden');
             stopButton.disabled = false;
-            setStatus('Kamera aktif · menunggu tangan', true);
-            feedbackMessage.textContent = `Bentuk isyarat ${target} dan tahan`;
-            practiceState.innerHTML = '<i class="bi bi-hand-index-thumb"></i> Sedang mencuba';
+            setStatus(messages['ai.js.active'] || '', true);
+            feedbackMessage.textContent = formatMessage('ai.js.form_hold', { target });
+            practiceState.innerHTML = `<i class="bi bi-hand-index-thumb"></i> ${messages['ai.js.trying'] || ''}`;
         } catch (error) {
             running = false;
             startButton.disabled = false;
-            setStatus('Akses kamera tidak berjaya');
-            feedbackMessage.textContent = 'Benarkan kamera dalam tetapan pelayar dan cuba semula';
+            setStatus(messages['ai.js.access_failed'] || '');
+            feedbackMessage.textContent = messages['ai.js.allow_camera'] || '';
             console.error('Camera error:', error);
         }
     };
@@ -258,9 +266,9 @@
         placeholder.classList.remove('is-hidden');
         startButton.disabled = false;
         stopButton.disabled = true;
-        setStatus('Kamera dihentikan');
-        practiceState.innerHTML = '<i class="bi bi-hourglass-split"></i> Belum bermula';
-        resetFeedback('Menunggu kamera');
+        setStatus(messages['ai.js.stopped'] || '');
+        practiceState.innerHTML = `<i class="bi bi-hourglass-split"></i> ${messages['ai.js.not_started'] || ''}`;
+        resetFeedback(messages['ai.js.start_to_practice'] || '');
     };
 
     startButton.addEventListener('click', startCamera);
