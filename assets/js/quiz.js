@@ -1,11 +1,11 @@
 (() => {
     'use strict';
 
+    const messages = window.BIM_I18N || {};
     const form = document.getElementById('quizForm');
     const timer = document.getElementById('timer');
     const timerPill = document.getElementById('timer-pill');
     const answeredCount = document.getElementById('answered-count');
-
     if (!form || !timer) return;
 
     const initialRemainingMs = Math.max(0, Number(form.dataset.remainingMs || 60000));
@@ -36,22 +36,15 @@
         const button = form.querySelector('button[type="submit"]');
         if (!button) return;
         button.disabled = true;
-        button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Menyemak jawapan...';
+        button.innerHTML = `<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> ${messages['quiz.checking'] || ''}`;
     };
 
     form.addEventListener('change', updateAnswered);
-    form.addEventListener('submit', () => {
-        submitted = true;
-        lockSubmitButton();
-    });
-
+    form.addEventListener('submit', () => { submitted = true; lockSubmitButton(); });
+    updateAnswered();
     renderTimer();
     const countdown = window.setInterval(() => {
-        if (submitted) {
-            window.clearInterval(countdown);
-            return;
-        }
-
+        if (submitted) { window.clearInterval(countdown); return; }
         renderTimer();
         if (remainingSeconds <= 1) {
             window.clearInterval(countdown);

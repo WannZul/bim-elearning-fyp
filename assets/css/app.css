@@ -690,3 +690,65 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     .ranking-type-tab { padding: 10px; }
     .ranking-type-tab .icon-tile { width: 42px; height: 42px; }
 }
+
+
+/* Written-interface localization */
+html:lang(zh-Hans) body {
+    --font-body: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    --font-display: "Noto Sans SC", var(--font-body);
+}
+html:lang(ta) body {
+    --font-body: "Noto Sans Tamil", "Nirmala UI", system-ui, sans-serif;
+    --font-display: "Noto Sans Tamil", var(--font-body);
+}
+html:lang(zh-Hans) .brand-copy small,
+html:lang(ta) .brand-copy small,
+html:lang(zh-Hans) .eyebrow,
+html:lang(ta) .eyebrow { letter-spacing: .03em; text-transform: none; }
+.locale-form {
+    position: relative; display: flex; align-items: center; gap: 5px; flex: 0 1 auto;
+    min-width: 0; padding: 4px 5px 4px 9px; border: 1px solid var(--ink-200);
+    border-radius: 12px; background: var(--surface); color: var(--ink-600);
+}
+.locale-form > i { flex: 0 0 auto; color: var(--teal-700); }
+.locale-form select {
+    min-width: 0; max-width: 116px; height: 32px; padding: 0 22px 0 4px; border: 0;
+    outline: 0; background: transparent; color: var(--ink-800); font-size: .76rem; font-weight: 700;
+}
+.locale-form button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    min-height: 32px; padding: 5px 8px; border: 0; border-radius: 8px;
+    background: var(--teal-100); color: var(--teal-700); font-size: .68rem; font-weight: 800;
+    white-space: nowrap;
+}
+.locale-form button:hover { background: var(--teal-200); }
+.auth-locale-control { position: fixed; top: 18px; right: 20px; z-index: 1100; }
+.auth-locale-control .locale-form { box-shadow: var(--shadow-md); }
+.auth-locale-control .locale-form select { max-width: 150px; }
+.display-title, .page-title, .section-title, .auth-story h1, .module-card h3,
+.quiz-type-card h2, .review-card h3 { overflow-wrap: anywhere; }
+.nav-link-custom span, .btn-primary-custom, .btn-secondary-custom, .btn-light-custom,
+.ranking-type-tab strong, .profile-copy span { white-space: normal; }
+
+@media (max-width: 1180px) {
+    .header-inner { gap: 12px; }
+    .locale-form select { max-width: 88px; }
+    .app-header .locale-form button { width: 32px; padding-inline: 6px; }
+    .app-header .locale-form button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+}
+@media (max-width: 900px) {
+    .app-header .locale-form { margin-left: auto; }
+    .nav-toggle { margin-left: 0; }
+    .primary-nav { max-height: calc(100vh - var(--header-height) - 20px); overflow-y: auto; }
+}
+@media (max-width: 680px) {
+    .header-inner { gap: 8px; }
+    .header-inner > .brand .brand-copy { display: none; }
+    .app-header .locale-form { padding-left: 7px; }
+    .app-header .locale-form select { width: 72px; }
+    .profile-menu .profile-avatar { display: none; }
+    .auth-locale-control { top: 10px; right: 10px; left: 10px; display: flex; justify-content: flex-end; }
+    .auth-locale-control .locale-form { max-width: calc(100vw - 20px); }
+    .auth-panel { padding-top: 82px; }
+    .quiz-submit-bar, .review-summary-actions, .review-footer-actions, .page-intro-actions { min-width: 0; }
+}

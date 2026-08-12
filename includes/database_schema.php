@@ -22,5 +22,5 @@ function quizTypeStorageReady(mysqli $conn): bool
 
 function quizTypeMigrationMessage(): string
 {
-    return 'Pangkalan data perlu dikemas kini. Import database/migrations/001_add_quiz_type.sql melalui phpMyAdmin, kemudian muat semula halaman ini.';
+    return t('flash.migration_required');
 }
