@@ -18,16 +18,77 @@
     const gestureResult = document.getElementById('gesture-result');
     const feedbackMessage = document.getElementById('feedback-message');
     const confidenceLabel = document.getElementById('confidence-label');
+    const confidenceProgress = document.getElementById('confidence-progress');
     const confidenceFill = document.getElementById('confidence-fill');
     const targetSymbol = document.getElementById('target-symbol');
     const targetTitle = document.getElementById('target-title');
     const practiceState = document.getElementById('practice-state');
+    const cameraAnnouncer = document.getElementById('camera-announcer');
+    const detectionAnnouncer = document.getElementById('detection-announcer');
 
-    if (!video || !canvas || !context || typeof Hands === 'undefined' || typeof fp === 'undefined') {
+    const requiredNodes = [video, canvas, context, startButton, stopButton, placeholder, statusText, statusDot,
+        gestureResult, feedbackMessage, confidenceLabel, confidenceProgress, confidenceFill, targetSymbol,
+        targetTitle, practiceState, cameraAnnouncer, detectionAnnouncer];
+    const dependenciesReady = typeof Hands !== 'undefined' && typeof fp !== 'undefined'
+        && typeof Camera !== 'undefined' && typeof drawConnectors !== 'undefined'
+        && typeof drawLandmarks !== 'undefined' && typeof HAND_CONNECTIONS !== 'undefined';
+
+    if (requiredNodes.some((node) => !node) || !dependenciesReady) {
         if (statusText) statusText.textContent = messages['ai.js.load_failed'] || '';
         if (feedbackMessage) feedbackMessage.textContent = messages['ai.js.reload'] || '';
+        if (cameraAnnouncer) cameraAnnouncer.textContent = messages['ai.js.load_failed'] || '';
         return;
     }
+
+    const lastAnnouncements = new WeakMap();
+    const announce = (node, message, semanticKey = message) => {
+        if (!node || !message || lastAnnouncements.get(node) === semanticKey) return;
+        lastAnnouncements.set(node, semanticKey);
+        node.textContent = '';
+        window.requestAnimationFrame(() => {
+            if (lastAnnouncements.get(node) === semanticKey) node.textContent = message;
+        });
+    };
+
+    let pendingDetectionTimer = null;
+    let pendingDetectionState = '';
+    let currentDetectionState = '';
+    let lastTransientAnnouncementAt = 0;
+    const clearPendingDetection = () => {
+        window.clearTimeout(pendingDetectionTimer);
+        pendingDetectionTimer = null;
+        pendingDetectionState = '';
+    };
+    const resetDetectionAnnouncements = () => {
+        clearPendingDetection();
+        currentDetectionState = '';
+        lastTransientAnnouncementAt = 0;
+        lastAnnouncements.delete(detectionAnnouncer);
+        detectionAnnouncer.textContent = '';
+    };
+    const announceDetection = (state, message) => {
+        clearPendingDetection();
+        if (currentDetectionState === state) return;
+        currentDetectionState = state;
+        announce(detectionAnnouncer, message, state);
+    };
+    const queueTransientDetection = (state, message) => {
+        if (currentDetectionState === state) {
+            clearPendingDetection();
+            return;
+        }
+        if (pendingDetectionState === state) return;
+        clearPendingDetection();
+        pendingDetectionState = state;
+        pendingDetectionTimer = window.setTimeout(() => {
+            if (pendingDetectionState !== state) return;
+            pendingDetectionState = '';
+            if (Date.now() - lastTransientAnnouncementAt < 2500) return;
+            lastTransientAnnouncementAt = Date.now();
+            currentDetectionState = state;
+            announce(detectionAnnouncer, message, state);
+        }, 900);
+    };
 
     const { Finger, FingerCurl, FingerDirection, GestureDescription } = fp;
     const fingers = [Finger.Thumb, Finger.Index, Finger.Middle, Finger.Ring, Finger.Pinky];
@@ -72,18 +133,25 @@
 
     let camera = null;
     let running = false;
-    let target = targetSymbol?.textContent.trim() || 'A';
+    let target = targetSymbol.textContent.trim() || 'A';
     let recentGestures = [];
     let stableSince = null;
     let completedTarget = false;
     const requiredHoldMs = 1800;
 
-    const setStatus = (message, isLive = false) => {
+    const setStatus = (message, isLive = false, shouldAnnounce = true) => {
         statusText.textContent = message;
         statusDot.classList.toggle('live', isLive);
+        if (shouldAnnounce) announce(cameraAnnouncer, message, `camera:${message}`);
     };
 
-    const resetFeedback = (message = messages['ai.js.show_hand'] || '') => {
+    const setProgress = (value) => {
+        const normalized = Math.min(100, Math.max(0, Math.round(value)));
+        confidenceFill.style.width = `${normalized}%`;
+        confidenceProgress.setAttribute('aria-valuenow', String(normalized));
+    };
+
+    const resetFeedback = (message = messages['ai.js.show_hand'] || '', transientState = null) => {
         recentGestures = [];
         stableSince = null;
         completedTarget = false;
@@ -91,22 +159,25 @@
         gestureResult.textContent = '—';
         feedbackMessage.textContent = message;
         confidenceLabel.textContent = messages['ai.js.stability_zero'] || '';
-        confidenceFill.style.width = '0%';
+        setProgress(0);
+        if (transientState) queueTransientDetection(transientState, message);
     };
 
     const updateTarget = (nextTarget) => {
+        if (nextTarget === target) return;
         target = nextTarget;
         completedTarget = false;
         stableSince = null;
         targetSymbol.textContent = target;
         targetTitle.textContent = target === 'A' ? messages['ai.js.title_A'] : formatMessage('ai.js.title_number', { target });
-        practiceState.innerHTML = `<i class="bi bi-hourglass-split"></i> ${messages['ai.js.waiting_sign'] || ''}`;
+        practiceState.innerHTML = `<i class="bi bi-hourglass-split" aria-hidden="true"></i> ${messages['ai.js.waiting_sign'] || ''}`;
         document.querySelectorAll('[data-target]').forEach((button) => {
             const isActive = button.dataset.target === target;
             button.classList.toggle('active', isActive);
             button.setAttribute('aria-pressed', String(isActive));
         });
         resetFeedback(running ? formatMessage('ai.js.form_hold', { target }) : messages['ai.js.start_to_practice']);
+        announceDetection(`target:${target}`, formatMessage('ai.js.target_changed', { target }));
         const url = new URL(window.location.href);
         url.searchParams.set('target', target);
         window.history.replaceState({}, '', url);
@@ -170,6 +241,7 @@
     };
 
     const onResults = (results) => {
+        if (!running) return;
         canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
         context.save();
@@ -178,7 +250,7 @@
         const landmarks = results.multiHandLandmarks?.[0];
         if (!landmarks) {
             context.restore();
-            resetFeedback();
+            resetFeedback(messages['ai.js.show_hand'] || '', 'no-hand');
             return;
         }
 
@@ -188,9 +260,10 @@
 
         const match = classifyGesture(landmarks);
         if (!match) {
-            resetFeedback(messages['ai.js.unrecognized'] || '');
+            resetFeedback(messages['ai.js.unrecognized'] || '', 'unrecognized');
             return;
         }
+        clearPendingDetection();
 
         recentGestures.push(match.name);
         if (recentGestures.length > 10) recentGestures.shift();
@@ -199,31 +272,40 @@
 
         const hasEnoughSamples = recentGestures.length >= 6;
         const fingerposeConfidence = Math.min(100, Math.round((match.score / 10) * 100));
+        const visualProgress = hasEnoughSamples
+            ? Math.min(fingerposeConfidence, stability)
+            : (recentGestures.length / 6) * 100;
 
         gestureResult.textContent = match.name;
         confidenceLabel.textContent = hasEnoughSamples
             ? formatMessage('ai.js.match', { confidence: fingerposeConfidence, stability })
             : formatMessage('ai.js.stabilizing', { count: recentGestures.length });
-        confidenceFill.style.width = `${hasEnoughSamples ? Math.min(fingerposeConfidence, stability) : (recentGestures.length / 6) * 100}%`;
+        setProgress(visualProgress);
 
         if (match.name === target && hasEnoughSamples && stability >= 70) {
+            if (!completedTarget) announceDetection(`detected-target:${target}`, formatMessage('ai.js.form_hold', { target }));
             stableSince ??= performance.now();
             const heldMs = performance.now() - stableSince;
             const holdProgress = Math.min(100, Math.round((heldMs / requiredHoldMs) * 100));
             feedbackMessage.textContent = formatMessage('ai.js.keep', { target, progress: holdProgress });
-            practiceState.innerHTML = `<i class="bi bi-stars"></i> ${messages['ai.js.almost'] || ''}`;
+            practiceState.innerHTML = `<i class="bi bi-stars" aria-hidden="true"></i> ${messages['ai.js.almost'] || ''}`;
             if (heldMs >= requiredHoldMs && !completedTarget) {
                 completedTarget = true;
                 feedbackMessage.textContent = formatMessage('ai.js.confirmed', { target });
-                practiceState.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${messages['ai.js.success'] || ''}`;
+                practiceState.innerHTML = `<i class="bi bi-check-circle-fill" aria-hidden="true"></i> ${messages['ai.js.success'] || ''}`;
                 practiceState.classList.add('teal');
+                announceDetection(`success:${target}`, formatMessage('ai.js.confirmed', { target }));
             }
         } else {
             stableSince = null;
             feedbackMessage.textContent = match.name === target
                 ? messages['ai.js.steady'] || ''
                 : formatMessage('ai.js.mismatch', { detected: match.name, target });
-            practiceState.innerHTML = `<i class="bi bi-hand-index-thumb"></i> ${messages['ai.js.trying'] || ''}`;
+            practiceState.innerHTML = `<i class="bi bi-hand-index-thumb" aria-hidden="true"></i> ${messages['ai.js.trying'] || ''}`;
+            if (hasEnoughSamples && stability >= 70) {
+                const state = match.name === target ? `detected-unstable:${target}` : `mismatch:${match.name}:${target}`;
+                announceDetection(state, feedbackMessage.textContent);
+            }
         }
     };
 
@@ -247,17 +329,24 @@
             stopButton.disabled = false;
             setStatus(messages['ai.js.active'] || '', true);
             feedbackMessage.textContent = formatMessage('ai.js.form_hold', { target });
-            practiceState.innerHTML = `<i class="bi bi-hand-index-thumb"></i> ${messages['ai.js.trying'] || ''}`;
+            practiceState.innerHTML = `<i class="bi bi-hand-index-thumb" aria-hidden="true"></i> ${messages['ai.js.trying'] || ''}`;
+            stopButton.focus();
         } catch (error) {
             running = false;
+            camera?.stop();
+            video.srcObject?.getTracks().forEach((track) => track.stop());
+            camera = null;
+            placeholder.classList.remove('is-hidden');
             startButton.disabled = false;
+            stopButton.disabled = true;
             setStatus(messages['ai.js.access_failed'] || '');
             feedbackMessage.textContent = messages['ai.js.allow_camera'] || '';
+            startButton.focus();
             console.error('Camera error:', error);
         }
     };
 
-    const stopCamera = () => {
+    const stopCamera = (shouldAnnounce = true, returnFocus = true) => {
         running = false;
         camera?.stop();
         video.srcObject?.getTracks().forEach((track) => track.stop());
@@ -266,13 +355,15 @@
         placeholder.classList.remove('is-hidden');
         startButton.disabled = false;
         stopButton.disabled = true;
-        setStatus(messages['ai.js.stopped'] || '');
-        practiceState.innerHTML = `<i class="bi bi-hourglass-split"></i> ${messages['ai.js.not_started'] || ''}`;
+        setStatus(messages['ai.js.stopped'] || '', false, shouldAnnounce);
+        practiceState.innerHTML = `<i class="bi bi-hourglass-split" aria-hidden="true"></i> ${messages['ai.js.not_started'] || ''}`;
         resetFeedback(messages['ai.js.start_to_practice'] || '');
+        resetDetectionAnnouncements();
+        if (returnFocus) startButton.focus();
     };
 
     startButton.addEventListener('click', startCamera);
-    stopButton.addEventListener('click', stopCamera);
+    stopButton.addEventListener('click', () => stopCamera());
     document.querySelectorAll('[data-target]').forEach((button) => button.addEventListener('click', () => updateTarget(button.dataset.target)));
-    window.addEventListener('pagehide', stopCamera);
+    window.addEventListener('pagehide', () => stopCamera(false, false));
 })();
