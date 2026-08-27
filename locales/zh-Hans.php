@@ -1,5 +1,5 @@
 <?php
-return array_replace_recursive(require __DIR__ . '/ms.php', [
+$catalog = array_replace_recursive(require __DIR__ . '/ms.php', [
     'locale' => ['label' => '语言', 'switch' => '切换语言', 'ms' => 'Bahasa Melayu', 'en' => 'English', 'zh-Hans' => '简体中文', 'ta' => 'தமிழ்'],
     'meta' => ['description' => 'BIMBoleh——提供 AI 摄像头练习的互动式马来西亚手语学习平台。'],
     'common' => ['brand_tagline' => '学习。手语。自信。', 'student' => '学员', 'home' => '主页', 'back' => '返回', 'time' => '用时', 'points' => '分', 'skip' => '跳到主要内容', 'close_notice' => '关闭通知', 'processing' => '处理中……', 'show_password' => '显示密码', 'hide_password' => '隐藏密码'],
@@ -54,3 +54,5 @@ return array_replace_recursive(require __DIR__ . '/ms.php', [
     'leaderboard' => ['page_title' => ':theme排行榜', 'eyebrow' => '按测验分类的排行榜', 'heading' => ':theme排名', 'intro' => '每个类别都有独立排名。最高分优先，用时较短者在同分时领先。', 'tabs_label' => '选择排行榜类型', 'ranking' => '排名', 'podium_label' => ':theme前三名', 'top_ten' => '前 10 名学员 · :theme', 'best_only' => '仅显示此类别中的最佳成绩', 'your_rank' => '你的名次：#:rank', 'position' => '名次', 'student' => '学员', 'best_score' => '最佳分数', 'time' => '用时', 'achievement' => '成绩', 'you' => '你', 'scope_note' => '其他类别的分数不会影响此排名。', 'try_quiz' => '参加:theme测验', 'be_first' => '成为第一名', 'empty' => ':theme测验尚无分数。完成挑战即可开启此类别的排名。', 'start' => '开始挑战'],
     'diagnostics' => ['title' => '数据库诊断', 'success' => '数据库连接成功', 'summary' => '找到 :count 个数据表。测验类别存储：', 'ready' => '就绪', 'not_ready' => '尚未更新', 'back' => '返回主页'],
 ]);
+
+return array_replace_recursive($catalog, require __DIR__ . '/features/sign_expansion.zh-Hans.php');

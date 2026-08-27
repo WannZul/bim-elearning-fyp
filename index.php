@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/quiz_bank.php';
 
 $userId = (int) $_SESSION['user_id'];
 $username = (string) ($_SESSION['username'] ?? t('common.student'));
-$themes = quizThemes();
+$themes = leaderboardThemes();
 $storageReady = quizTypeStorageReady($conn);
 $typeStats = [];
 $recentAttempts = [];

@@ -1,5 +1,5 @@
 <?php
-return array_replace_recursive(require __DIR__ . '/ms.php', [
+$catalog = array_replace_recursive(require __DIR__ . '/ms.php', [
     'locale' => ['label' => 'Language', 'switch' => 'Change language', 'ms' => 'Bahasa Melayu', 'en' => 'English', 'zh-Hans' => '简体中文', 'ta' => 'தமிழ்'],
     'meta' => ['description' => 'BIMBoleh — an interactive Malaysian Sign Language learning platform with AI camera practice.'],
     'common' => ['brand_tagline' => 'Learn. Sign. Connect.', 'student' => 'Student', 'home' => 'Home', 'back' => 'Back', 'time' => 'Time', 'points' => 'points', 'skip' => 'Skip to main content', 'close_notice' => 'Close notification', 'processing' => 'Processing...', 'show_password' => 'Show password', 'hide_password' => 'Hide password'],
@@ -54,3 +54,5 @@ return array_replace_recursive(require __DIR__ . '/ms.php', [
     'leaderboard' => ['page_title' => ':theme Leaderboard', 'eyebrow' => 'Leaderboard by quiz', 'heading' => ':theme Ranking', 'intro' => 'Each category has its own ranking. The highest score comes first, and the fastest time breaks a tie.', 'tabs_label' => 'Choose leaderboard type', 'ranking' => 'RANKING', 'podium_label' => 'Top three positions for :theme', 'top_ten' => 'Top 10 students · :theme', 'best_only' => 'Only the best achievement in this category is shown', 'your_rank' => 'Your position: #:rank', 'position' => 'Position', 'student' => 'Student', 'best_score' => 'Best score', 'time' => 'Time', 'achievement' => 'Achievement', 'you' => 'You', 'scope_note' => 'Scores from other categories do not affect this ranking.', 'try_quiz' => 'Try the :theme quiz', 'be_first' => 'Be the first', 'empty' => 'There are no scores for the :theme quiz yet. Complete the challenge to open this category ranking.', 'start' => 'Start challenge'],
     'diagnostics' => ['title' => 'Database Diagnostics', 'success' => 'Database connected successfully', 'summary' => ':count tables found. Quiz category storage:', 'ready' => 'Ready', 'not_ready' => 'Not updated', 'back' => 'Back to home'],
 ]);
+
+return array_replace_recursive($catalog, require __DIR__ . '/features/sign_expansion.en.php');

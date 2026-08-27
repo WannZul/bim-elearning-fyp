@@ -24,7 +24,7 @@ $globalClientI18nKeys = [
 $clientMessages = clientTranslations(array_merge($globalClientI18nKeys, $clientI18nKeys ?? []));
 ?>
 <script>window.BIM_I18N = <?= json_encode($clientMessages, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script src="<?= e($basePath) ?>assets/js/app.js"></script>
 <?= $pageScripts ?? '' ?>
 </body>

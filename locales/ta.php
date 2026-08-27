@@ -1,5 +1,5 @@
 <?php
-return array_replace_recursive(require __DIR__ . '/ms.php', [
+$catalog = array_replace_recursive(require __DIR__ . '/ms.php', [
     'locale' => ['label' => 'மொழி', 'switch' => 'மொழியை மாற்று', 'ms' => 'Bahasa Melayu', 'en' => 'English', 'zh-Hans' => '简体中文', 'ta' => 'தமிழ்'],
     'meta' => ['description' => 'BIMBoleh — AI கேமரா பயிற்சியுடன் கூடிய ஊடாடும் மலேசிய சைகை மொழிக் கற்றல் தளம்.'],
     'common' => ['brand_tagline' => 'கற்போம். சைகை செய்வோம். நம்பிக்கை கொள்வோம்.', 'student' => 'மாணவர்', 'home' => 'முகப்பு', 'back' => 'திரும்பு', 'time' => 'நேரம்', 'points' => 'புள்ளிகள்', 'skip' => 'முதன்மை உள்ளடக்கத்திற்குச் செல்', 'close_notice' => 'அறிவிப்பை மூடு', 'processing' => 'செயலாக்கப்படுகிறது...', 'show_password' => 'கடவுச்சொல்லைக் காட்டு', 'hide_password' => 'கடவுச்சொல்லை மறை'],
@@ -54,3 +54,5 @@ return array_replace_recursive(require __DIR__ . '/ms.php', [
     'leaderboard' => ['page_title' => ':theme தரவரிசைப் பலகை', 'eyebrow' => 'வினாடி வினா வாரியான தரவரிசை', 'heading' => ':theme தரவரிசை', 'intro' => 'ஒவ்வொரு வகைக்கும் தனித் தரவரிசை உண்டு. அதிக மதிப்பெண் முதலில்; சமநிலையை விரைவான நேரம் தீர்மானிக்கும்.', 'tabs_label' => 'தரவரிசை வகையைத் தேர்ந்தெடுக்கவும்', 'ranking' => 'தரவரிசை', 'podium_label' => ':theme-க்கான முதல் மூன்று இடங்கள்', 'top_ten' => 'சிறந்த 10 மாணவர்கள் · :theme', 'best_only' => 'இந்த வகையின் சிறந்த சாதனை மட்டும் காட்டப்படுகிறது', 'your_rank' => 'உங்கள் இடம்: #:rank', 'position' => 'இடம்', 'student' => 'மாணவர்', 'best_score' => 'சிறந்த மதிப்பெண்', 'time' => 'நேரம்', 'achievement' => 'சாதனை', 'you' => 'நீங்கள்', 'scope_note' => 'மற்ற வகை மதிப்பெண்கள் இந்தத் தரவரிசையைப் பாதிக்காது.', 'try_quiz' => ':theme வினாடி வினாவை முயல்க', 'be_first' => 'முதலாமவராகுங்கள்', 'empty' => ':theme வினாடி வினாவுக்கு இன்னும் மதிப்பெண்கள் இல்லை. இந்த வகைத் தரவரிசையைத் திறக்க சவாலை முடிக்கவும்.', 'start' => 'சவாலைத் தொடங்கு'],
     'diagnostics' => ['title' => 'தரவுத்தளக் கண்டறிதல்', 'success' => 'தரவுத்தள இணைப்பு வெற்றி', 'summary' => ':count அட்டவணைகள் கண்டறியப்பட்டன. வினாடி வினா வகைச் சேமிப்பு:', 'ready' => 'தயார்', 'not_ready' => 'புதுப்பிக்கப்படவில்லை', 'back' => 'முகப்பிற்குத் திரும்பு'],
 ]);
+
+return array_replace_recursive($catalog, require __DIR__ . '/features/sign_expansion.ta.php');

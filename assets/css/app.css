@@ -922,3 +922,112 @@ html:lang(ta) .accessibility-panel { line-height: 1.65; }
     .confidence-fill, .progress-fill { background: Highlight; }
     .camera-status-dot.live { background: Highlight; }
 }
+
+
+/* BIM sign catalog, categorized practice, and camera practical */
+.sign-catalog-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.sign-card .lesson-visual { min-height: 138px; }
+.sign-card .lesson-symbol-large { width: 78px; height: 78px; border-radius: 23px; font-size: 2.45rem; }
+.sign-card .lesson-content { display: flex; flex-direction: column; min-height: 350px; padding: 18px; }
+.sign-card .lesson-content > p { min-height: 0; }
+.sign-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.sign-badges .tag { padding: 4px 7px; font-size: .66rem; }
+.sign-card .lesson-tip { margin-top: auto; padding-top: 2px; }
+.camera-unavailable { margin: 12px 0 0 !important; padding: 10px; border-left: 3px solid var(--amber-500); border-radius: 8px; background: var(--amber-100); color: #72501b !important; font-size: .73rem !important; }
+.sign-card .lesson-footer { align-items: flex-end; margin-top: 14px; }
+.sign-reference-link { color: var(--teal-700); font-size: .7rem; font-weight: 800; text-align: right; }
+.reference-disclaimer { display: flex; align-items: flex-start; gap: 8px; margin: 16px 0 0; color: var(--ink-600); font-size: .78rem; }
+.reference-disclaimer a { color: var(--teal-700); font-weight: 800; text-decoration: underline; }
+.practice-category-bar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 12px; padding: 16px 18px; }
+.practice-category-bar strong, .practice-category-bar span { display: block; }
+.practice-category-bar strong { font: 800 1rem/1.2 var(--font-display); }
+.practice-category-bar span { color: var(--ink-500); font-size: .74rem; }
+.practice-category-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.practice-category-controls .lesson-tab { margin: 0; }
+.category-scope-note { display: flex; gap: 9px; margin: 0 0 22px; padding: 11px 14px; border-radius: 12px; background: var(--blue-100); color: var(--ink-700); font-size: .78rem; }
+.categorized-target-selector { grid-template-columns: repeat(5, minmax(42px, 1fr)); }
+.challenge-section-heading { margin: 34px 0 18px; }
+.challenge-section-heading:first-of-type { margin-top: 0; }
+.challenge-section-heading h2 { margin: 0; font: 800 1.55rem/1.2 var(--font-display); }
+.challenge-section-heading p { margin: 5px 0 0; color: var(--ink-600); }
+.practical-section-heading { margin-top: 44px; }
+.practical-type-card::before { background: var(--coral-500); }
+.practical-type-card .quiz-type-icon { background: var(--coral-100); color: var(--coral-600); }
+.practical-type-card .quiz-type-number { top: 22px; font-size: 2.4rem; }
+.practical-intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .55fr); gap: 24px; align-items: end; margin-bottom: 24px; }
+.practical-intro p { max-width: 700px; margin: 12px 0 0; color: var(--ink-600); }
+.prototype-warning { display: flex; align-items: flex-start; gap: 10px; padding: 15px 17px; border: 1px solid #efd18b; border-radius: 14px; background: var(--amber-100); color: #684715; font-size: .78rem; }
+.prototype-warning i { flex: 0 0 auto; margin-top: 2px; font-size: 1.15rem; }
+.practical-toolbar { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 20px; margin-bottom: 18px; padding: 13px 17px; }
+.practical-toolbar > div:first-child strong, .practical-toolbar > div:first-child span { display: block; }
+.practical-toolbar > div:first-child strong { font: 800 .92rem/1.3 var(--font-display); }
+.practical-toolbar > div:first-child span { color: var(--ink-500); font-size: .74rem; }
+.practical-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(290px, .55fr); gap: 20px; align-items: start; }
+.practical-target-panel { padding: 24px; }
+.practical-target-symbol { display: grid; place-items: center; min-height: 125px; border-radius: 20px; background: var(--teal-100); font: 800 4.5rem/1 var(--font-display); }
+.practical-target-panel h2 { margin: 15px 0; font: 800 1.15rem/1.3 var(--font-display); }
+.practical-target-list { display: grid; gap: 7px; margin: 0 0 18px; padding: 0; list-style: none; }
+.practical-target-list li { display: grid; grid-template-columns: 28px 28px 1fr; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--ink-200); border-radius: 10px; color: var(--ink-600); }
+.practical-target-list li > span { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 8px; background: var(--ink-100); font-size: .7rem; font-weight: 800; }
+.practical-target-list li strong { color: var(--ink-900); }
+.practical-target-list li small { overflow-wrap: anywhere; font-size: .68rem; }
+.practical-target-list li[aria-current="step"] { border: 2px solid var(--teal-500); background: var(--teal-50); }
+.practical-target-list li.is-confirmed { border-color: var(--teal-500); background: var(--teal-100); }
+.practical-target-list li.is-confirmed::after { content: "✓"; color: var(--success); font-weight: 900; }
+.practical-target-list li.is-skipped { border-color: var(--coral-500); background: var(--coral-100); }
+.practical-target-list li.is-skipped::after { content: "—"; color: var(--coral-600); font-weight: 900; }
+.practical-privacy { display: flex; gap: 13px; margin-top: 18px; padding: 17px 20px; color: var(--teal-700); }
+.practical-privacy > i { flex: 0 0 auto; font-size: 1.3rem; }
+.practical-privacy p { margin: 0; font-size: .78rem; }
+.practical-review-warning { width: min(100%, 950px); margin: 22px auto; }
+.practical-review-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; width: min(100%, 1100px); margin: 0 auto; }
+.practical-review-item { position: relative; display: grid; justify-items: center; gap: 12px; padding: 20px 14px; text-align: center; border-top: 4px solid var(--teal-500); }
+.practical-review-item.is-skipped { border-top-color: var(--coral-500); }
+.practical-review-item .lesson-symbol-large { width: 70px; height: 70px; border-radius: 20px; font-size: 2.2rem; transform: none; }
+.practical-review-number { position: absolute; top: 8px; left: 10px; color: var(--ink-500); font-size: .7rem; font-weight: 800; }
+.practical-review-item h2 { margin: 0 0 5px; font: 800 .9rem/1.3 var(--font-display); }
+.practical-review-item p { margin: 0; color: var(--teal-700); font-size: .73rem; font-weight: 800; }
+.practical-review-item.is-skipped p { color: var(--coral-600); }
+.ranking-type-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 760px); }
+.progress-type-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+html[data-text-size="extra-large"] .sign-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-text-size="extra-large"] .sign-card .lesson-content { min-height: 390px; }
+html[data-text-size="extra-large"] .practical-review-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html[data-text-size="extra-large"] .ranking-type-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-contrast="high"] .camera-unavailable,
+html[data-contrast="high"] .prototype-warning,
+html[data-contrast="high"] .category-scope-note { border: 2px solid #181818; color: #000000 !important; }
+html[data-contrast="high"] .practical-target-list li[aria-current="step"],
+html[data-contrast="high"] .practical-target-list li.is-confirmed,
+html[data-contrast="high"] .practical-target-list li.is-skipped { outline: 2px solid currentColor; }
+
+@media (max-width: 1100px) {
+    .sign-catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .practical-review-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+    .sign-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .practical-intro, .practical-layout { grid-template-columns: 1fr; }
+    .practical-review-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ranking-type-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+    .sign-catalog-grid, .practical-review-list { grid-template-columns: 1fr; }
+    .sign-card .lesson-content { min-height: 0; }
+    .practice-category-bar { align-items: stretch; flex-direction: column; }
+    .practice-category-controls { display: grid; grid-template-columns: 1fr 1fr; }
+    .categorized-target-selector { grid-template-columns: repeat(5, minmax(42px, 1fr)); }
+    .practical-toolbar { position: sticky; top: calc(var(--header-height) + 4px); z-index: 40; }
+    .practical-target-panel { padding: 18px; }
+    .ranking-type-tabs { grid-template-columns: 1fr; }
+    html[data-text-size="extra-large"] .sign-catalog-grid,
+    html[data-text-size="extra-large"] .practical-review-list,
+    html[data-text-size="extra-large"] .ranking-type-tabs { grid-template-columns: 1fr; }
+    html[data-text-size="extra-large"] .sign-card .lesson-content { min-height: 0; }
+}
+@media (forced-colors: active) {
+    .prototype-warning, .camera-unavailable, .category-scope-note,
+    .practical-target-list li, .practical-review-item { border: 2px solid CanvasText; }
+    .practical-target-list li[aria-current="step"] { outline: 3px solid Highlight; }
+}

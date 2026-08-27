@@ -24,6 +24,43 @@ function quizThemes(): array
     ];
 }
 
+function practicalQuizThemes(): array
+{
+    $themes = quizThemes();
+    return [
+        'alphabet' => array_merge($themes['alphabet'], [
+            'mode' => 'practical',
+            'category' => 'alphabet',
+            'duration' => t('quiz.practical_duration'),
+        ]),
+        'numbers' => array_merge($themes['numbers'], [
+            'mode' => 'practical',
+            'category' => 'numbers',
+            'duration' => t('quiz.practical_duration'),
+        ]),
+    ];
+}
+
+function leaderboardThemes(): array
+{
+    $themes = [];
+    foreach (quizThemes() as $type => $theme) {
+        $themes[$type] = array_merge($theme, [
+            'score_type' => $type,
+            'mode' => 'theory',
+            'category' => $type,
+        ]);
+    }
+    return $themes;
+}
+
+function challengeUrlForScoreType(string $scoreType): string
+{
+    $theme = leaderboardThemes()[$scoreType] ?? null;
+    if (!$theme) return 'quiz.php';
+    return 'quiz.php?theme=' . urlencode($theme['category']);
+}
+
 function quizQuestionDefinitions(): array
 {
     return [

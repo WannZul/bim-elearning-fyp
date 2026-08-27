@@ -1,5 +1,5 @@
 <?php
-return [
+$catalog = [
     'locale' => ['label' => 'Bahasa', 'switch' => 'Tukar bahasa', 'ms' => 'Bahasa Melayu', 'en' => 'English', 'zh-Hans' => '简体中文', 'ta' => 'தமிழ்'],
     'meta' => ['description' => 'BIMBoleh — platform pembelajaran Bahasa Isyarat Malaysia yang interaktif dengan latihan kamera AI.'],
     'common' => [
@@ -102,3 +102,5 @@ return [
     ],
     'diagnostics' => ['title' => 'Diagnostik Pangkalan Data', 'success' => 'Sambungan pangkalan data berjaya', 'summary' => ':count jadual ditemui. Penyimpanan kategori kuiz:', 'ready' => 'Sedia', 'not_ready' => 'Belum dikemas kini', 'back' => 'Kembali ke utama'],
 ];
+
+return array_replace_recursive($catalog, require __DIR__ . '/features/sign_expansion.ms.php');
