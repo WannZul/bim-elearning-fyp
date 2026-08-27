@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/quiz_bank.php';
 
 $storageReady = quizTypeStorageReady($conn);
 $themes = quizThemes();
+$practicalThemes = practicalQuizThemes();
 $themeKey = strtolower(trim((string) ($_GET['theme'] ?? '')));
 $selectedTheme = $themes[$themeKey] ?? null;
 $questions = [];
@@ -57,8 +58,13 @@ include __DIR__ . '/../includes/header.php';
 <?php if (!$selectedTheme): ?>
     <?php if (!$storageReady): ?><section class="schema-alert surface-card" role="alert" data-reveal><div class="icon-tile amber"><i class="bi bi-database-exclamation"></i></div><div><h2><?= e(t('quiz.schema_heading')) ?></h2><p><?= e(quizTypeMigrationMessage()) ?></p></div></section><?php endif; ?>
     <header class="quiz-hub-hero" data-reveal><div><span class="eyebrow"><?= e(t('quiz.hub_eyebrow')) ?></span><h1 class="page-title"><?= e(t('quiz.hub_title')) ?></h1><p><?= e(t('quiz.hub_intro')) ?></p></div><div class="quiz-hub-score"><i class="bi bi-lightning-charge-fill"></i><strong>50</strong><span><?= e(t('quiz.max_points')) ?></span></div></header>
+    <div class="challenge-section-heading" data-reveal><div><span class="eyebrow"><?= e(t('quiz.theory_heading')) ?></span><h2><?= e(t('quiz.theory_heading')) ?></h2><p><?= e(t('quiz.theory_intro')) ?></p></div></div>
     <section class="quiz-type-grid" aria-label="<?= e(t('quiz.types_label')) ?>">
         <?php foreach ($themes as $key => $theme): ?><article class="quiz-type-card surface-card card-hover accent-<?= e($theme['accent']) ?>" data-reveal><div class="quiz-type-icon"><i class="bi <?= e($theme['icon']) ?>"></i></div><div class="quiz-type-number">0<?= array_search($key, array_keys($themes), true) + 1 ?></div><span class="tag"><i class="bi bi-stopwatch"></i> <?= e($theme['duration']) ?></span><h2><?= e($theme['title']) ?></h2><p><?= e($theme['description']) ?></p><div class="quiz-type-meta"><span><i class="bi bi-list-check"></i> <?= e(t('quiz.random_questions')) ?></span><span><i class="bi bi-chat-square-text"></i> <?= e(t('quiz.answer_review')) ?></span></div><?php if ($storageReady): ?><a class="btn-secondary-custom btn-wide" href="quiz.php?theme=<?= urlencode($key) ?>"><?= e(t('quiz.choose')) ?> <i class="bi bi-arrow-right"></i></a><?php else: ?><span class="btn-light-custom btn-wide" aria-disabled="true"><i class="bi bi-lock"></i> <?= e(t('quiz.migration')) ?></span><?php endif; ?></article><?php endforeach; ?>
+    </section>
+    <div class="challenge-section-heading practical-section-heading" data-reveal><div><span class="eyebrow"><?= e(t('leaderboard.mode_practical')) ?></span><h2><?= e(t('quiz.practical_heading')) ?></h2><p><?= e(t('quiz.practical_intro')) ?></p></div></div>
+    <section class="quiz-type-grid practical-type-grid" aria-label="<?= e(t('quiz.practical_heading')) ?>">
+        <?php foreach ($practicalThemes as $key => $theme): ?><article class="quiz-type-card practical-type-card surface-card card-hover accent-<?= e($theme['accent']) ?>" data-reveal><div class="quiz-type-icon"><i class="bi bi-camera-video" aria-hidden="true"></i></div><div class="quiz-type-number"><i class="bi bi-hand-index-thumb" aria-hidden="true"></i></div><span class="tag coral"><i class="bi bi-stopwatch" aria-hidden="true"></i> <?= e($theme['duration']) ?></span><h2><?= e($theme['title']) ?></h2><p><?= e(t('quiz.practical_intro')) ?></p><div class="quiz-type-meta"><span><i class="bi bi-shuffle" aria-hidden="true"></i> <?= e(t('quiz.practical_card_meta')) ?></span><span><i class="bi bi-shield-exclamation" aria-hidden="true"></i> <?= e(t('practical.trust')) ?></span></div><a class="btn-secondary-custom btn-wide" href="practical_quiz.php?category=<?= urlencode($key) ?>"><?= e(t('quiz.practical_choose')) ?> <i class="bi bi-arrow-right" aria-hidden="true"></i></a></article><?php endforeach; ?>
     </section>
     <div class="quiz-hub-note" data-reveal><i class="bi bi-bullseye"></i><p><strong><?= e(t('quiz.scope_label')) ?></strong> <?= e(t('quiz.scope')) ?></p></div>
 <?php elseif (!$storageReady): ?>

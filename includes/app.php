@@ -127,6 +127,14 @@ function verifyCsrf(?string $token): bool
         && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+function applyCameraSecurityHeaders(): void
+{
+    if (headers_sent()) return;
+
+    header('Permissions-Policy: camera=(self)');
+    header("Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:");
+}
+
 function setFlash(string $type, string $messageKey, array $params = []): void
 {
     $_SESSION['flash'] = ['type' => $type, 'message_key' => $messageKey, 'params' => $params];

@@ -2,368 +2,208 @@
     'use strict';
 
     const messages = window.BIM_I18N || {};
+    const config = window.BIM_SIGN_PRACTICE || {};
     const formatMessage = (key, params = {}) => Object.entries(params).reduce(
-        (message, [name, value]) => message.replaceAll(`:${name}`, String(value)),
-        messages[key] || '',
+        (message, [name, value]) => message.split(`:${name}`).join(String(value)), messages[key] || '',
     );
-
-    const video = document.getElementById('input_video');
-    const canvas = document.getElementById('output_canvas');
-    const context = canvas?.getContext('2d');
-    const startButton = document.getElementById('start-camera');
-    const stopButton = document.getElementById('stop-camera');
-    const placeholder = document.getElementById('camera-placeholder');
-    const statusText = document.getElementById('ai-status');
-    const statusDot = document.getElementById('camera-status-dot');
-    const gestureResult = document.getElementById('gesture-result');
-    const feedbackMessage = document.getElementById('feedback-message');
-    const confidenceLabel = document.getElementById('confidence-label');
-    const confidenceProgress = document.getElementById('confidence-progress');
-    const confidenceFill = document.getElementById('confidence-fill');
-    const targetSymbol = document.getElementById('target-symbol');
-    const targetTitle = document.getElementById('target-title');
-    const practiceState = document.getElementById('practice-state');
-    const cameraAnnouncer = document.getElementById('camera-announcer');
-    const detectionAnnouncer = document.getElementById('detection-announcer');
-
-    const requiredNodes = [video, canvas, context, startButton, stopButton, placeholder, statusText, statusDot,
-        gestureResult, feedbackMessage, confidenceLabel, confidenceProgress, confidenceFill, targetSymbol,
-        targetTitle, practiceState, cameraAnnouncer, detectionAnnouncer];
-    const dependenciesReady = typeof Hands !== 'undefined' && typeof fp !== 'undefined'
-        && typeof Camera !== 'undefined' && typeof drawConnectors !== 'undefined'
-        && typeof drawLandmarks !== 'undefined' && typeof HAND_CONNECTIONS !== 'undefined';
-
-    if (requiredNodes.some((node) => !node) || !dependenciesReady) {
-        if (statusText) statusText.textContent = messages['ai.js.load_failed'] || '';
-        if (feedbackMessage) feedbackMessage.textContent = messages['ai.js.reload'] || '';
-        if (cameraAnnouncer) cameraAnnouncer.textContent = messages['ai.js.load_failed'] || '';
+    const byId = (id) => document.getElementById(id);
+    const nodes = {
+        video: byId('input_video'), canvas: byId('output_canvas'), start: byId('start-camera'), stop: byId('stop-camera'),
+        placeholder: byId('camera-placeholder'), status: byId('ai-status'), statusDot: byId('camera-status-dot'),
+        result: byId('gesture-result'), feedback: byId('feedback-message'), confidenceLabel: byId('confidence-label'),
+        confidenceProgress: byId('confidence-progress'), confidenceFill: byId('confidence-fill'), targetSymbol: byId('target-symbol'),
+        targetTitle: byId('target-title'), targetHeading: byId('target-heading'), targetSelector: byId('target-selector'),
+        categoryCount: byId('category-count'), practiceState: byId('practice-state'), cameraAnnouncer: byId('camera-announcer'),
+        detectionAnnouncer: byId('detection-announcer'),
+    };
+    const manifestMatchesRecognizer = () => {
+        try {
+            return ['alphabet', 'numbers'].every((category) => {
+                const pageTargets = (config.manifest?.[category] || []).map((sign) => String(sign.symbol));
+                const recognizerTargets = window.BIMGestureRecognizer.approvedTargets(category);
+                return pageTargets.length === recognizerTargets.length
+                    && pageTargets.every((target, index) => target === recognizerTargets[index]);
+            });
+        } catch (error) {
+            return false;
+        }
+    };
+    const ready = Object.values(nodes).every(Boolean) && window.BIMGestureRecognizer?.isSupported()
+        && manifestMatchesRecognizer();
+    if (!ready) {
+        if (nodes.status) nodes.status.textContent = messages['ai.js.load_failed'] || '';
+        if (nodes.feedback) nodes.feedback.textContent = messages['ai.js.reload'] || '';
+        if (nodes.cameraAnnouncer) nodes.cameraAnnouncer.textContent = messages['ai.js.load_failed'] || '';
         return;
     }
 
-    const lastAnnouncements = new WeakMap();
-    const announce = (node, message, semanticKey = message) => {
-        if (!node || !message || lastAnnouncements.get(node) === semanticKey) return;
-        lastAnnouncements.set(node, semanticKey);
+    let category = config.category;
+    let target = String(config.target);
+    let lastCameraAnnouncement = '';
+    let lastDetectionAnnouncement = '';
+    const announce = (node, message, kind) => {
+        if (!message || (kind === 'camera' ? lastCameraAnnouncement : lastDetectionAnnouncement) === message) return;
+        if (kind === 'camera') lastCameraAnnouncement = message; else lastDetectionAnnouncement = message;
         node.textContent = '';
-        window.requestAnimationFrame(() => {
-            if (lastAnnouncements.get(node) === semanticKey) node.textContent = message;
-        });
+        window.requestAnimationFrame(() => { node.textContent = message; });
     };
-
-    let pendingDetectionTimer = null;
-    let pendingDetectionState = '';
-    let currentDetectionState = '';
-    let lastTransientAnnouncementAt = 0;
-    const clearPendingDetection = () => {
-        window.clearTimeout(pendingDetectionTimer);
-        pendingDetectionTimer = null;
-        pendingDetectionState = '';
-    };
-    const resetDetectionAnnouncements = () => {
-        clearPendingDetection();
-        currentDetectionState = '';
-        lastTransientAnnouncementAt = 0;
-        lastAnnouncements.delete(detectionAnnouncer);
-        detectionAnnouncer.textContent = '';
-    };
-    const announceDetection = (state, message) => {
-        clearPendingDetection();
-        if (currentDetectionState === state) return;
-        currentDetectionState = state;
-        announce(detectionAnnouncer, message, state);
-    };
-    const queueTransientDetection = (state, message) => {
-        if (currentDetectionState === state) {
-            clearPendingDetection();
-            return;
-        }
-        if (pendingDetectionState === state) return;
-        clearPendingDetection();
-        pendingDetectionState = state;
-        pendingDetectionTimer = window.setTimeout(() => {
-            if (pendingDetectionState !== state) return;
-            pendingDetectionState = '';
-            if (Date.now() - lastTransientAnnouncementAt < 2500) return;
-            lastTransientAnnouncementAt = Date.now();
-            currentDetectionState = state;
-            announce(detectionAnnouncer, message, state);
-        }, 900);
-    };
-
-    const { Finger, FingerCurl, FingerDirection, GestureDescription } = fp;
-    const fingers = [Finger.Thumb, Finger.Index, Finger.Middle, Finger.Ring, Finger.Pinky];
-    const makeNumberGesture = (name, raisedFingers) => {
-        const gesture = new GestureDescription(name);
-        fingers.forEach((finger) => {
-            if (raisedFingers.includes(finger)) {
-                gesture.addCurl(finger, FingerCurl.NoCurl, 1.0);
-                if (finger === Finger.Thumb) {
-                    gesture.addDirection(finger, FingerDirection.HorizontalLeft, 0.7);
-                    gesture.addDirection(finger, FingerDirection.HorizontalRight, 0.7);
-                    gesture.addDirection(finger, FingerDirection.DiagonalUpLeft, 0.35);
-                    gesture.addDirection(finger, FingerDirection.DiagonalUpRight, 0.35);
-                } else {
-                    gesture.addDirection(finger, FingerDirection.VerticalUp, 0.7);
-                    gesture.addDirection(finger, FingerDirection.DiagonalUpLeft, 0.35);
-                    gesture.addDirection(finger, FingerDirection.DiagonalUpRight, 0.35);
-                }
-            } else {
-                gesture.addCurl(finger, FingerCurl.FullCurl, 1.0);
-                gesture.addCurl(finger, FingerCurl.HalfCurl, 0.7);
-            }
-        });
-        return gesture;
-    };
-
-    const gestureA = new GestureDescription('A');
-    [Finger.Index, Finger.Middle, Finger.Ring, Finger.Pinky].forEach((finger) => {
-        gestureA.addCurl(finger, FingerCurl.FullCurl, 1.0);
-        gestureA.addCurl(finger, FingerCurl.HalfCurl, 0.7);
-    });
-    gestureA.addCurl(Finger.Thumb, FingerCurl.HalfCurl, 1.0);
-    gestureA.addCurl(Finger.Thumb, FingerCurl.NoCurl, 0.5);
-
-    const estimator = new fp.GestureEstimator([
-        gestureA,
-        makeNumberGesture('1', [Finger.Index]),
-        makeNumberGesture('2', [Finger.Index, Finger.Middle]),
-        makeNumberGesture('3', [Finger.Index, Finger.Middle, Finger.Ring]),
-        makeNumberGesture('4', [Finger.Index, Finger.Middle, Finger.Ring, Finger.Pinky]),
-    ]);
-
-    let camera = null;
-    let running = false;
-    let target = targetSymbol.textContent.trim() || 'A';
-    let recentGestures = [];
-    let stableSince = null;
-    let completedTarget = false;
-    const requiredHoldMs = 1800;
-
-    const setStatus = (message, isLive = false, shouldAnnounce = true) => {
-        statusText.textContent = message;
-        statusDot.classList.toggle('live', isLive);
-        if (shouldAnnounce) announce(cameraAnnouncer, message, `camera:${message}`);
-    };
-
     const setProgress = (value) => {
-        const normalized = Math.min(100, Math.max(0, Math.round(value)));
-        confidenceFill.style.width = `${normalized}%`;
-        confidenceProgress.setAttribute('aria-valuenow', String(normalized));
+        const normalized = Math.min(100, Math.max(0, Math.round(value || 0)));
+        nodes.confidenceFill.style.width = `${normalized}%`;
+        nodes.confidenceProgress.setAttribute('aria-valuenow', String(normalized));
     };
+    const setPracticeState = (icon, text, success = false) => {
+        nodes.practiceState.replaceChildren();
+        const iconNode = document.createElement('i');
+        iconNode.className = `bi ${icon}`;
+        iconNode.setAttribute('aria-hidden', 'true');
+        nodes.practiceState.append(iconNode, document.createTextNode(` ${text}`));
+        nodes.practiceState.classList.toggle('teal', success);
+    };
+    const signConfig = (nextCategory, nextTarget) => config.manifest[nextCategory].find((sign) => sign.symbol === String(nextTarget));
 
-    const resetFeedback = (message = messages['ai.js.show_hand'] || '', transientState = null) => {
-        recentGestures = [];
-        stableSince = null;
-        completedTarget = false;
-        practiceState.classList.remove('teal');
-        gestureResult.textContent = '—';
-        feedbackMessage.textContent = message;
-        confidenceLabel.textContent = messages['ai.js.stability_zero'] || '';
+    const resetFeedback = (message) => {
+        nodes.result.textContent = '—';
+        nodes.feedback.textContent = message;
+        nodes.confidenceLabel.textContent = messages['ai.js.stability_zero'] || '';
         setProgress(0);
-        if (transientState) queueTransientDetection(transientState, message);
+        setPracticeState('bi-hourglass-split', messages['ai.js.waiting_sign'] || '');
     };
 
-    const updateTarget = (nextTarget) => {
-        if (nextTarget === target) return;
-        target = nextTarget;
-        completedTarget = false;
-        stableSince = null;
-        targetSymbol.textContent = target;
-        targetTitle.textContent = target === 'A' ? messages['ai.js.title_A'] : formatMessage('ai.js.title_number', { target });
-        practiceState.innerHTML = `<i class="bi bi-hourglass-split" aria-hidden="true"></i> ${messages['ai.js.waiting_sign'] || ''}`;
-        document.querySelectorAll('[data-target]').forEach((button) => {
-            const isActive = button.dataset.target === target;
-            button.classList.toggle('active', isActive);
-            button.setAttribute('aria-pressed', String(isActive));
-        });
-        resetFeedback(running ? formatMessage('ai.js.form_hold', { target }) : messages['ai.js.start_to_practice']);
-        announceDetection(`target:${target}`, formatMessage('ai.js.target_changed', { target }));
+    const updateUrl = () => {
         const url = new URL(window.location.href);
+        url.searchParams.set('category', category);
         url.searchParams.set('target', target);
         window.history.replaceState({}, '', url);
     };
 
-    const fingerAngle = (a, b, c) => {
-        const ab = [a.x - b.x, a.y - b.y, a.z - b.z];
-        const cb = [c.x - b.x, c.y - b.y, c.z - b.z];
-        const dot = ab[0] * cb[0] + ab[1] * cb[1] + ab[2] * cb[2];
-        const lengthAB = Math.hypot(...ab);
-        const lengthCB = Math.hypot(...cb);
-        if (!lengthAB || !lengthCB) return 0;
-        return Math.acos(Math.min(1, Math.max(-1, dot / (lengthAB * lengthCB)))) * (180 / Math.PI);
+    const renderTargets = () => {
+        nodes.targetSelector.replaceChildren();
+        config.manifest[category].forEach((sign) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `target-button${sign.symbol === target ? ' active' : ''}`;
+            button.dataset.target = sign.symbol;
+            button.setAttribute('aria-pressed', String(sign.symbol === target));
+            button.textContent = sign.symbol;
+            nodes.targetSelector.append(button);
+        });
     };
 
-    const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
-
-    const extendedFingerPattern = (landmarks) => {
-        const wrist = landmarks[0];
-        const fingerIndexes = [
-            [5, 6, 8],
-            [9, 10, 12],
-            [13, 14, 16],
-            [17, 18, 20],
-        ];
-        const raised = fingerIndexes.map(([mcp, pip, tip]) => (
-            fingerAngle(landmarks[mcp], landmarks[pip], landmarks[tip]) > 150
-            && distance(landmarks[tip], wrist) > distance(landmarks[pip], wrist) * 1.08
-        ));
-        const thumbRaised = fingerAngle(landmarks[2], landmarks[3], landmarks[4]) > 145
-            && distance(landmarks[4], wrist) > distance(landmarks[3], wrist) * 1.15
-            && distance(landmarks[4], landmarks[5]) > distance(landmarks[3], landmarks[5]) * 1.08;
-        const palmWidth = distance(landmarks[5], landmarks[17]);
-        const thumbNearPalm = distance(landmarks[4], landmarks[5]) < palmWidth * 0.95;
-
-        return { raised, thumbRaised, thumbNearPalm };
+    const renderTarget = () => {
+        const sign = signConfig(category, target);
+        nodes.targetSymbol.textContent = target;
+        nodes.targetTitle.textContent = sign?.title || target;
+        nodes.targetHeading.textContent = formatMessage('ai.target_heading', { category: config.categoryLabels[category] });
+        nodes.categoryCount.textContent = config.categoryCounts[category];
+        document.querySelectorAll('[data-category]').forEach((button) => {
+            const active = button.dataset.category === category;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
+        renderTargets();
     };
 
-    const expectedGestureFromPattern = ({ raised, thumbRaised, thumbNearPalm }) => {
-        const pattern = raised.map((value) => value ? '1' : '0').join('');
-        if (pattern === '0000' && !thumbRaised && thumbNearPalm) return 'A';
-        if (pattern === '1000') return '1';
-        if (pattern === '1100') return '2';
-        if (pattern === '1110') return '3';
-        if (pattern === '1111' && !thumbRaised) return '4';
-        return null;
-    };
-
-    const classifyGesture = (landmarks) => {
-        const expectedName = expectedGestureFromPattern(extendedFingerPattern(landmarks));
-        if (!expectedName) return null;
-
-        // MediaPipe returns objects; Fingerpose 0.1.0 requires coordinate triples.
-        const fingerposeLandmarks = landmarks.map(({ x, y, z }) => [x, y, z]);
-        const estimate = estimator.estimate(fingerposeLandmarks, 5.5);
-        const matchingGesture = estimate.gestures
-            .filter((gesture) => gesture.name === expectedName)
-            .sort((a, b) => b.score - a.score)[0];
-
-        return matchingGesture && matchingGesture.score >= 5.5 ? matchingGesture : null;
-    };
-
-    const onResults = (results) => {
-        if (!running) return;
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        context.save();
-        context.clearRect(0, 0, canvas.width, canvas.height);
-
-        const landmarks = results.multiHandLandmarks?.[0];
-        if (!landmarks) {
-            context.restore();
-            resetFeedback(messages['ai.js.show_hand'] || '', 'no-hand');
-            return;
-        }
-
-        drawConnectors(context, landmarks, HAND_CONNECTIONS, { color: '#10b5a8', lineWidth: 4 });
-        drawLandmarks(context, landmarks, { color: '#ffffff', fillColor: '#f2735b', lineWidth: 2, radius: 3 });
-        context.restore();
-
-        const match = classifyGesture(landmarks);
-        if (!match) {
-            resetFeedback(messages['ai.js.unrecognized'] || '', 'unrecognized');
-            return;
-        }
-        clearPendingDetection();
-
-        recentGestures.push(match.name);
-        if (recentGestures.length > 10) recentGestures.shift();
-        const occurrences = recentGestures.filter((name) => name === match.name).length;
-        const stability = Math.round((occurrences / recentGestures.length) * 100);
-
-        const hasEnoughSamples = recentGestures.length >= 6;
-        const fingerposeConfidence = Math.min(100, Math.round((match.score / 10) * 100));
-        const visualProgress = hasEnoughSamples
-            ? Math.min(fingerposeConfidence, stability)
-            : (recentGestures.length / 6) * 100;
-
-        gestureResult.textContent = match.name;
-        confidenceLabel.textContent = hasEnoughSamples
-            ? formatMessage('ai.js.match', { confidence: fingerposeConfidence, stability })
-            : formatMessage('ai.js.stabilizing', { count: recentGestures.length });
-        setProgress(visualProgress);
-
-        if (match.name === target && hasEnoughSamples && stability >= 70) {
-            if (!completedTarget) announceDetection(`detected-target:${target}`, formatMessage('ai.js.form_hold', { target }));
-            stableSince ??= performance.now();
-            const heldMs = performance.now() - stableSince;
-            const holdProgress = Math.min(100, Math.round((heldMs / requiredHoldMs) * 100));
-            feedbackMessage.textContent = formatMessage('ai.js.keep', { target, progress: holdProgress });
-            practiceState.innerHTML = `<i class="bi bi-stars" aria-hidden="true"></i> ${messages['ai.js.almost'] || ''}`;
-            if (heldMs >= requiredHoldMs && !completedTarget) {
-                completedTarget = true;
-                feedbackMessage.textContent = formatMessage('ai.js.confirmed', { target });
-                practiceState.innerHTML = `<i class="bi bi-check-circle-fill" aria-hidden="true"></i> ${messages['ai.js.success'] || ''}`;
-                practiceState.classList.add('teal');
-                announceDetection(`success:${target}`, formatMessage('ai.js.confirmed', { target }));
+    const recognizer = new window.BIMGestureRecognizer.GestureRecognizer({
+        video: nodes.video,
+        canvas: nodes.canvas,
+        category,
+        target,
+        onCameraStatus: ({ state }) => {
+            const statusMessages = {
+                requesting: messages['ai.js.requesting'], active: messages['ai.js.active'],
+                failed: messages['ai.js.access_failed'], stopped: messages['ai.js.stopped'],
+            };
+            const text = statusMessages[state] || '';
+            if (text) {
+                nodes.status.textContent = text;
+                announce(nodes.cameraAnnouncer, text, 'camera');
             }
-        } else {
-            stableSince = null;
-            feedbackMessage.textContent = match.name === target
-                ? messages['ai.js.steady'] || ''
-                : formatMessage('ai.js.mismatch', { detected: match.name, target });
-            practiceState.innerHTML = `<i class="bi bi-hand-index-thumb" aria-hidden="true"></i> ${messages['ai.js.trying'] || ''}`;
-            if (hasEnoughSamples && stability >= 70) {
-                const state = match.name === target ? `detected-unstable:${target}` : `mismatch:${match.name}:${target}`;
-                announceDetection(state, feedbackMessage.textContent);
+            nodes.statusDot.classList.toggle('live', state === 'active');
+            if (state === 'active') {
+                nodes.placeholder.classList.add('is-hidden');
+                nodes.start.disabled = true;
+                nodes.stop.disabled = false;
+                nodes.feedback.textContent = formatMessage('ai.js.form_hold', { target });
+                setPracticeState('bi-hand-index-thumb', messages['ai.js.trying'] || '');
+                nodes.stop.focus();
+            } else if (state === 'stopped' || state === 'failed') {
+                nodes.placeholder.classList.remove('is-hidden');
+                nodes.start.disabled = false;
+                nodes.stop.disabled = true;
+                resetFeedback(state === 'failed' ? messages['ai.js.allow_camera'] : messages['ai.js.start_to_practice']);
             }
+        },
+        onConfirmation: () => {
+            const message = formatMessage('ai.js.confirmed', { target });
+            announce(nodes.detectionAnnouncer, message, 'detection');
+        },
+        onUpdate: (update) => {
+            if (update.state === 'confirmed') {
+                nodes.result.textContent = target;
+                nodes.feedback.textContent = formatMessage('ai.js.confirmed', { target });
+                nodes.confidenceLabel.textContent = formatMessage('ai.js.match', { confidence: update.confidence || 100, stability: update.stability || 100 });
+                setProgress(100);
+                setPracticeState('bi-check-circle-fill', messages['ai.js.success'] || '', true);
+                return;
+            }
+            if (update.state === 'no-hand' || update.state === 'unrecognized') {
+                resetFeedback(update.state === 'no-hand' ? messages['ai.js.show_hand'] : messages['ai.js.unrecognized']);
+                return;
+            }
+            nodes.result.textContent = update.name || '—';
+            nodes.confidenceLabel.textContent = update.samples < 6
+                ? formatMessage('ai.js.stabilizing', { count: update.samples || 0 })
+                : formatMessage('ai.js.match', { confidence: update.confidence || 0, stability: update.stability || 0 });
+            setProgress(update.progress);
+            if (update.state === 'holding') {
+                nodes.feedback.textContent = formatMessage('ai.js.keep', { target, progress: update.holdProgress });
+                setPracticeState('bi-stars', messages['ai.js.almost'] || '');
+            } else if (update.state === 'mismatch') {
+                nodes.feedback.textContent = formatMessage('ai.js.mismatch', { detected: update.name, target });
+                setPracticeState('bi-hand-index-thumb', messages['ai.js.trying'] || '');
+            } else {
+                nodes.feedback.textContent = messages['ai.js.steady'] || '';
+                setPracticeState('bi-hand-index-thumb', messages['ai.js.trying'] || '');
+            }
+        },
+    });
+
+    const changeTarget = (nextTarget, nextCategory = category) => {
+        nextTarget = String(nextTarget);
+        if (!signConfig(nextCategory, nextTarget)) return;
+        const categoryChanged = nextCategory !== category;
+        const targetChanged = nextTarget !== target;
+        if (!categoryChanged && !targetChanged) return;
+        category = nextCategory;
+        target = nextTarget;
+        recognizer.setTarget(category, target);
+        renderTarget();
+        resetFeedback(recognizer.running ? formatMessage('ai.js.form_hold', { target }) : messages['ai.js.start_to_practice']);
+        updateUrl();
+        const announcement = categoryChanged
+            ? formatMessage('ai.js.category_changed', { category: config.categoryLabels[category] })
+            : formatMessage('ai.js.target_changed', { target });
+        announce(nodes.detectionAnnouncer, announcement, 'detection');
+    };
+
+    nodes.start.addEventListener('click', async () => {
+        nodes.start.disabled = true;
+        try { await recognizer.start(); } catch (error) { console.error('Camera error:', error); nodes.start.focus(); }
+    });
+    nodes.stop.addEventListener('click', () => { recognizer.stop(); nodes.start.focus(); });
+    nodes.targetSelector.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-target]');
+        if (button) {
+            changeTarget(button.dataset.target);
+            nodes.targetSelector.querySelector(`[data-target="${CSS.escape(button.dataset.target)}"]`)?.focus();
         }
-    };
-
-    const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}` });
-    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.72, minTrackingConfidence: 0.65 });
-    hands.onResults(onResults);
-
-    const startCamera = async () => {
-        if (running) return;
-        setStatus(messages['ai.js.requesting'] || '');
-        startButton.disabled = true;
-        try {
-            camera = new Camera(video, {
-                onFrame: async () => { if (running) await hands.send({ image: video }); },
-                width: 640,
-                height: 480,
-            });
-            running = true;
-            await camera.start();
-            placeholder.classList.add('is-hidden');
-            stopButton.disabled = false;
-            setStatus(messages['ai.js.active'] || '', true);
-            feedbackMessage.textContent = formatMessage('ai.js.form_hold', { target });
-            practiceState.innerHTML = `<i class="bi bi-hand-index-thumb" aria-hidden="true"></i> ${messages['ai.js.trying'] || ''}`;
-            stopButton.focus();
-        } catch (error) {
-            running = false;
-            camera?.stop();
-            video.srcObject?.getTracks().forEach((track) => track.stop());
-            camera = null;
-            placeholder.classList.remove('is-hidden');
-            startButton.disabled = false;
-            stopButton.disabled = true;
-            setStatus(messages['ai.js.access_failed'] || '');
-            feedbackMessage.textContent = messages['ai.js.allow_camera'] || '';
-            startButton.focus();
-            console.error('Camera error:', error);
-        }
-    };
-
-    const stopCamera = (shouldAnnounce = true, returnFocus = true) => {
-        running = false;
-        camera?.stop();
-        video.srcObject?.getTracks().forEach((track) => track.stop());
-        camera = null;
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        placeholder.classList.remove('is-hidden');
-        startButton.disabled = false;
-        stopButton.disabled = true;
-        setStatus(messages['ai.js.stopped'] || '', false, shouldAnnounce);
-        practiceState.innerHTML = `<i class="bi bi-hourglass-split" aria-hidden="true"></i> ${messages['ai.js.not_started'] || ''}`;
-        resetFeedback(messages['ai.js.start_to_practice'] || '');
-        resetDetectionAnnouncements();
-        if (returnFocus) startButton.focus();
-    };
-
-    startButton.addEventListener('click', startCamera);
-    stopButton.addEventListener('click', () => stopCamera());
-    document.querySelectorAll('[data-target]').forEach((button) => button.addEventListener('click', () => updateTarget(button.dataset.target)));
-    window.addEventListener('pagehide', () => stopCamera(false, false));
+    });
+    document.querySelectorAll('[data-category]').forEach((button) => button.addEventListener('click', () => {
+        const nextCategory = button.dataset.category;
+        changeTarget(config.manifest[nextCategory][0].symbol, nextCategory);
+    }));
+    window.addEventListener('pagehide', (event) => {
+        if (event.persisted) recognizer.stop(); else void recognizer.destroy();
+    });
 })();
