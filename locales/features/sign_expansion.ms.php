@@ -30,7 +30,7 @@ $copy = [
         'movement' => ['J' => 'Jejak bentuk J dengan tangan.', 'Z' => 'Jejak bentuk Z dengan tangan.', '10' => 'Putarkan bentuk ibu jari ke atas.'],
         'ready_desc' => 'Latih 19 isyarat statik terpilih menggunakan titik satu tangan MediaPipe dan Fingerpose.',
         'prototype' => 'Rujukan pembelajaran: Bank Isyarat BIM MFD. Imej pihak ketiga tidak disalin kerana repositori sumber tiada lesen.',
-        'reference_link' => 'Buka Bank Isyarat BIM MFD', 'practice_aria' => 'Latih :title dengan kamera',
+        'reference_link' => 'Buka Bank Isyarat BIM MFD', 'reference_category_link' => 'Lihat kategori nombor Bank Isyarat BIM', 'practice_aria' => 'Latih :title dengan kamera',
     ],
     'ai' => [
         'intro' => 'Pilih abjad atau nombor, kemudian latih satu daripada 19 isyarat prototaip statik yang dipilih. Pengelasan mengikut kategori dipilih.',
