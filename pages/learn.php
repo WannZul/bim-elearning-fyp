@@ -37,7 +37,7 @@ include __DIR__ . '/../includes/header.php';
     <section class="lesson-cta surface-card" data-reveal><div><h2><?= e(t('learn.ready')) ?></h2><p><?= e(t('learn.ready_desc')) ?></p></div><a class="btn-secondary-custom" href="ai_tracking.php?category=alphabet"><i class="bi bi-camera-video" aria-hidden="true"></i> <?= e(t('learn.open_ai')) ?></a></section>
     <p class="reference-disclaimer"><i class="bi bi-info-circle" aria-hidden="true"></i> <span><?= e(t('learn.prototype')) ?></span> <a href="<?= e(BIM_SIGN_REFERENCE_URL) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('learn.reference_link')) ?></a></p>
 </div></div>
-<script>
+<script nonce="<?= e(cspNonce()) ?>">
 document.querySelectorAll('[data-lesson-filter]').forEach((button) => {
     button.addEventListener('click', () => {
         document.querySelectorAll('[data-lesson-filter]').forEach((item) => {

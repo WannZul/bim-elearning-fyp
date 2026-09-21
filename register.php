@@ -7,43 +7,55 @@ if (isLoggedIn()) {
 }
 
 require_once __DIR__ . '/includes/db_connect.php';
+require_once __DIR__ . '/includes/security.php';
 $error = '';
 $username = '';
 $email = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim((string) ($_POST['username'] ?? ''));
-    $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+    $username = normalizedDisplayName($_POST['username'] ?? '');
+    $email = normalizedEmail($_POST['email'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
+    $consentAccepted = (string) ($_POST['consent'] ?? '') === '1';
 
     if (!verifyCsrf($_POST['csrf_token'] ?? null)) {
         $error = t('errors.csrf');
-    } elseif (strlen($username) < 2 || strlen($username) > 50) {
+    } elseif (!validDisplayName($username)) {
         $error = t('auth.register.username_error');
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    } elseif (!validAccountEmail($email)) {
         $error = t('auth.register.email_error');
-    } elseif (strlen($password) < 8) {
+    } elseif (!validAccountPassword($password)) {
         $error = t('auth.register.password_error');
+    } elseif (!$consentAccepted) {
+        $error = t('auth.register.consent_error');
     } else {
-        $stmt = mysqli_prepare($conn, 'SELECT id FROM users WHERE email = ? LIMIT 1');
-        mysqli_stmt_bind_param($stmt, 's', $email);
-        mysqli_stmt_execute($stmt);
-        $exists = mysqli_num_rows(mysqli_stmt_get_result($stmt)) > 0;
-        mysqli_stmt_close($stmt);
-
-        if ($exists) {
-            $error = t('auth.register.email_exists');
+        $exists = false;
+        $lookup = mysqli_prepare($conn, 'SELECT id FROM users WHERE email = ? LIMIT 1');
+        if ($lookup) {
+            mysqli_stmt_bind_param($lookup, 's', $email);
+            if (mysqli_stmt_execute($lookup)) $exists = mysqli_num_rows(mysqli_stmt_get_result($lookup)) > 0;
+            mysqli_stmt_close($lookup);
         } else {
-            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = mysqli_prepare($conn, 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)');
-            mysqli_stmt_bind_param($stmt, 'sss', $username, $email, $passwordHash);
-            if (mysqli_stmt_execute($stmt)) {
+            $error = t('auth.register.create_failed');
+        }
+
+        if ($error === '' && $exists) {
+            $error = t('auth.register.email_exists');
+        } elseif ($error === '') {
+            $passwordHash = hashAccountPassword($password);
+            $stmt = is_string($passwordHash)
+                ? mysqli_prepare($conn, 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)')
+                : false;
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'sss', $username, $email, $passwordHash);
+                if (mysqli_stmt_execute($stmt)) {
+                    mysqli_stmt_close($stmt);
+                    setFlash('success', 'flash.account_created');
+                    header('Location: login.php');
+                    exit;
+                }
                 mysqli_stmt_close($stmt);
-                setFlash('success', 'flash.account_created');
-                header('Location: login.php');
-                exit;
             }
-            mysqli_stmt_close($stmt);
             $error = t('auth.register.create_failed');
         }
     }
@@ -75,9 +87,9 @@ include __DIR__ . '/includes/header.php';
             <form method="POST" action="register.php" data-submit-loading>
                 <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
                 <div class="form-group-custom"><label for="username"><?= e(t('auth.register.username')) ?></label><div class="input-shell"><i aria-hidden="true" class="bi bi-person"></i><input class="input-control-custom" id="username" name="username" type="text" value="<?= e($username) ?>" placeholder="<?= e(t('auth.register.username_placeholder')) ?>" minlength="2" maxlength="50" autocomplete="name" required></div></div>
-                <div class="form-group-custom"><label for="email"><?= e(t('auth.email')) ?></label><div class="input-shell"><i aria-hidden="true" class="bi bi-envelope"></i><input class="input-control-custom" id="email" name="email" type="email" value="<?= e($email) ?>" placeholder="<?= e(t('auth.email_placeholder')) ?>" autocomplete="email" required></div></div>
-                <div class="form-group-custom"><label for="password"><?= e(t('auth.password')) ?></label><div class="input-shell"><i aria-hidden="true" class="bi bi-lock"></i><input class="input-control-custom" id="password" name="password" type="password" placeholder="<?= e(t('auth.register.password_placeholder')) ?>" minlength="8" autocomplete="new-password" aria-describedby="register-password-hint" required><button class="password-toggle" type="button" data-password-toggle="password" aria-label="<?= e(t('common.show_password')) ?>"><i aria-hidden="true" class="bi bi-eye"></i></button></div><small class="form-hint" id="register-password-hint"><?= e(t('auth.register.password_hint')) ?></small></div>
-                <label class="form-check-custom"><input type="checkbox" required><span><?= e(t('auth.register.consent')) ?></span></label>
+                <div class="form-group-custom"><label for="email"><?= e(t('auth.email')) ?></label><div class="input-shell"><i aria-hidden="true" class="bi bi-envelope"></i><input class="input-control-custom" id="email" name="email" type="email" value="<?= e($email) ?>" placeholder="<?= e(t('auth.email_placeholder')) ?>" autocomplete="email" maxlength="190" required></div></div>
+                <div class="form-group-custom"><label for="password"><?= e(t('auth.password')) ?></label><div class="input-shell"><i aria-hidden="true" class="bi bi-lock"></i><input class="input-control-custom" id="password" name="password" type="password" placeholder="<?= e(t('auth.register.password_placeholder')) ?>" minlength="8" maxlength="128" autocomplete="new-password" aria-describedby="register-password-hint" required><button class="password-toggle" type="button" data-password-toggle="password" aria-label="<?= e(t('common.show_password')) ?>"><i aria-hidden="true" class="bi bi-eye"></i></button></div><small class="form-hint" id="register-password-hint"><?= e(t('auth.register.password_hint')) ?></small></div>
+                <label class="form-check-custom"><input type="checkbox" name="consent" value="1" required><span><?= e(t('auth.register.consent')) ?></span></label>
                 <button class="btn-primary-custom btn-wide" type="submit"><?= e(t('auth.register.submit')) ?> <i aria-hidden="true" class="bi bi-arrow-right"></i></button>
             </form>
             <p class="auth-switch"><?= e(t('auth.register.has_account')) ?> <a href="login.php"><?= e(t('auth.register.login')) ?></a></p>
