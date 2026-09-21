@@ -1,4 +1,4 @@
-USE bim_elearning;
+-- Select the configured BIMBoleh database before importing this migration.
 
 SET @column_exists = (
     SELECT COUNT(*)

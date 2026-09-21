@@ -1,13 +1,17 @@
 <?php
 require_once __DIR__ . '/includes/app.php';
 
-$_SESSION = [];
-
-if (ini_get('session.use_cookies')) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    header('Allow: POST');
+    exit;
 }
 
-session_destroy();
-header('Location: login.php');
+if (!isLoggedIn() || !verifyCsrf($_POST['csrf_token'] ?? null)) {
+    http_response_code(403);
+    exit;
+}
+
+destroyCurrentSession();
+header('Location: login.php', true, 303);
 exit;

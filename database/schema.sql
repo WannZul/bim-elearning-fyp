@@ -1,8 +1,5 @@
-CREATE DATABASE IF NOT EXISTS bim_elearning
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
-USE bim_elearning;
+-- Select the target database in phpMyAdmin before importing this file.
+-- Local XAMPP default: create/select a database named bim_elearning.
 
 CREATE TABLE IF NOT EXISTS users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -11,6 +8,15 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS login_attempts (
+    attempt_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+    attempt_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    window_started_at BIGINT UNSIGNED NOT NULL,
+    blocked_until BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    updated_at BIGINT UNSIGNED NOT NULL,
+    INDEX idx_login_attempts_updated (updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS quiz_scores (

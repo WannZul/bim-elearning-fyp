@@ -7,36 +7,50 @@ if (isLoggedIn()) {
 }
 
 require_once __DIR__ . '/includes/db_connect.php';
+require_once __DIR__ . '/includes/security.php';
 $error = '';
 $email = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+    $email = normalizedEmail($_POST['email'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
 
     if (!verifyCsrf($_POST['csrf_token'] ?? null)) {
         $error = t('errors.csrf');
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
+    } elseif (!validAccountEmail($email) || !validLoginPassword($password)) {
         $error = t('auth.login.invalid_fields');
     } else {
-        $stmt = mysqli_prepare($conn, 'SELECT id, username, password FROM users WHERE email = ? LIMIT 1');
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 's', $email);
-            mysqli_stmt_execute($stmt);
-            $result = mysqli_stmt_get_result($stmt);
-            $user = mysqli_fetch_assoc($result);
-            mysqli_stmt_close($stmt);
+        $reservation = reserveLoginAttempt($conn, $email);
+        if (!$reservation['available'] && appIsProduction()) {
+            $error = t('auth.login.temporarily_unavailable');
+        } elseif (!$reservation['allowed']) {
+            $minutes = max(1, (int) ceil($reservation['retry_after'] / 60));
+            $error = t('auth.login.rate_limited', ['minutes' => $minutes]);
+        } else {
+            $user = userCredentialRecord($conn, $email);
+            if ($user === false) {
+                $error = t('auth.login.temporarily_unavailable');
+            } else {
+                $storedHash = is_array($user) ? (string) ($user['password'] ?? '') : BIM_DUMMY_PASSWORD_HASH;
+                $credentialsValid = verifyAccountPassword($password, $storedHash) && is_array($user);
+                if ($credentialsValid) {
+                    $cleanupReady = clearLoginFailures($conn, $email);
+                    $rehashReady = !accountPasswordNeedsRehash($storedHash)
+                        || persistPasswordRehash($conn, (int) $user['id'], $password);
 
-            if ($user && password_verify($password, $user['password'])) {
-                session_regenerate_id(true);
-                $_SESSION['user_id'] = (int) $user['id'];
-                $_SESSION['username'] = (string) $user['username'];
-                setFlash('success', 'flash.welcome_back');
-                header('Location: index.php');
-                exit;
+                    if (appIsProduction() && (!$cleanupReady || !$rehashReady)) {
+                        $error = t('auth.login.temporarily_unavailable');
+                    } else {
+                        beginAuthenticatedSession((int) $user['id'], (string) $user['username']);
+                        setFlash('success', 'flash.welcome_back');
+                        header('Location: index.php');
+                        exit;
+                    }
+                } else {
+                    $error = t('auth.login.invalid_credentials');
+                }
             }
         }
-        $error = t('auth.login.invalid_credentials');
     }
 }
 
@@ -67,8 +81,8 @@ include __DIR__ . '/includes/header.php';
             <?php if ($error): ?><div class="form-alert error" id="auth-form-alert" role="alert" tabindex="-1"><i aria-hidden="true" class="bi bi-exclamation-circle-fill"></i><span><?= e($error) ?></span></div><?php endif; ?>
             <form method="POST" action="login.php" data-submit-loading>
                 <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
-                <div class="form-group-custom"><label for="email"><?= e(t('auth.email')) ?></label><div class="input-shell"><i aria-hidden="true" class="bi bi-envelope"></i><input class="input-control-custom" id="email" name="email" type="email" value="<?= e($email) ?>" placeholder="<?= e(t('auth.email_placeholder')) ?>" autocomplete="email" required></div></div>
-                <div class="form-group-custom"><label for="password"><?= e(t('auth.password')) ?></label><div class="input-shell"><i aria-hidden="true" class="bi bi-lock"></i><input class="input-control-custom" id="password" name="password" type="password" placeholder="<?= e(t('auth.login.password_placeholder')) ?>" autocomplete="current-password" required><button class="password-toggle" type="button" data-password-toggle="password" aria-label="<?= e(t('common.show_password')) ?>"><i aria-hidden="true" class="bi bi-eye"></i></button></div></div>
+                <div class="form-group-custom"><label for="email"><?= e(t('auth.email')) ?></label><div class="input-shell"><i aria-hidden="true" class="bi bi-envelope"></i><input class="input-control-custom" id="email" name="email" type="email" value="<?= e($email) ?>" placeholder="<?= e(t('auth.email_placeholder')) ?>" autocomplete="email" maxlength="190" required></div></div>
+                <div class="form-group-custom"><label for="password"><?= e(t('auth.password')) ?></label><div class="input-shell"><i aria-hidden="true" class="bi bi-lock"></i><input class="input-control-custom" id="password" name="password" type="password" placeholder="<?= e(t('auth.login.password_placeholder')) ?>" autocomplete="current-password" maxlength="128" required><button class="password-toggle" type="button" data-password-toggle="password" aria-label="<?= e(t('common.show_password')) ?>"><i aria-hidden="true" class="bi bi-eye"></i></button></div></div>
                 <button class="btn-primary-custom btn-wide" type="submit"><?= e(t('auth.login.submit')) ?> <i aria-hidden="true" class="bi bi-arrow-right"></i></button>
             </form>
             <p class="auth-switch"><?= e(t('auth.login.no_account')) ?> <a href="register.php"><?= e(t('auth.login.register')) ?></a></p>

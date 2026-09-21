@@ -48,7 +48,7 @@ include __DIR__ . '/../includes/header.php';
         </aside>
     </div>
 </div></div>
-<script>window.BIM_SIGN_PRACTICE = <?= json_encode(['category' => $category, 'target' => $initialTarget, 'manifest' => $practiceManifest, 'categoryLabels' => ['alphabet' => t('ai.alphabet'), 'numbers' => t('ai.numbers')], 'categoryCounts' => ['alphabet' => t('ai.alphabet_count'), 'numbers' => t('ai.numbers_count')]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
+<script nonce="<?= e(cspNonce()) ?>">window.BIM_SIGN_PRACTICE = <?= json_encode(['category' => $category, 'target' => $initialTarget, 'manifest' => $practiceManifest, 'categoryLabels' => ['alphabet' => t('ai.alphabet'), 'numbers' => t('ai.numbers')], 'categoryCounts' => ['alphabet' => t('ai.alphabet_count'), 'numbers' => t('ai.numbers_count')]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
 <?php
 $clientI18nKeys = [
     'ai.js.load_failed', 'ai.js.reload', 'ai.js.show_hand', 'ai.js.waiting_sign', 'ai.js.form_hold', 'ai.js.start_to_practice',

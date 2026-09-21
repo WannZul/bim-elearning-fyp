@@ -91,7 +91,10 @@ $returnTo = (string) ($_SERVER['REQUEST_URI'] ?? ($basePath . 'index.php'));
         <div class="profile-menu">
             <div class="profile-avatar" aria-hidden="true"><?= e(initials($username)) ?></div>
             <div class="profile-copy"><span><?= e(t('nav.greeting')) ?></span><strong><?= e($username) ?></strong></div>
-            <a class="logout-link" href="<?= e($basePath) ?>logout.php" title="<?= e(t('nav.logout')) ?>" aria-label="<?= e(t('nav.logout')) ?>"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></a>
+            <form class="logout-form" method="POST" action="<?= e($basePath) ?>logout.php">
+                <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
+                <button class="logout-link" type="submit" title="<?= e(t('nav.logout')) ?>" aria-label="<?= e(t('nav.logout')) ?>"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></button>
+            </form>
         </div>
     </div>
 </header>

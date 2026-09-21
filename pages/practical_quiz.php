@@ -65,7 +65,7 @@ include __DIR__ . '/../includes/header.php';
 <?php endif; ?>
 </div></div>
 <?php if (count($targets) === 5): ?>
-<script>window.BIM_PRACTICAL = <?= json_encode(['category' => $category, 'targets' => $targets, 'startUrl' => 'practical_quiz_start.php'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
+<script nonce="<?= e(cspNonce()) ?>">window.BIM_PRACTICAL = <?= json_encode(['category' => $category, 'targets' => $targets, 'startUrl' => 'practical_quiz_start.php'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
 <?php endif; ?>
 <?php
 $clientI18nKeys = count($targets) === 5 ? [
