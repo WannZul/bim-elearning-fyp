@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-const BIM_SIGN_REFERENCE_URL = 'https://www.bimsignbank.org';
+const BIM_SIGN_REFERENCE_URL = 'https://bimsignbank.org';
+const BIM_NUMBER_REFERENCE_URL = 'https://bimsignbank.org/groups/general/numbers';
 const BIM_SIGN_CATEGORIES = ['alphabet', 'numbers'];
 
 /**
@@ -34,6 +35,21 @@ function signCatalog(): array
         'T' => 'thumb_placement',
         'X' => 'finger_bend',
     ];
+    $alphabetReferenceWords = [
+        'I' => 'I (the ninth letter of the alphabet)',
+    ];
+    $numberReferenceWords = [
+        1 => 'One, 1',
+        2 => 'Two, 2',
+        3 => 'Three, 3',
+        4 => 'Four, 4',
+        5 => 'Five, 5',
+        6 => 'Six, 6',
+        7 => 'Seven, 7',
+        8 => 'Eight, 8',
+        9 => 'Nine, 9',
+        10 => 'Ten, 10',
+    ];
     $catalog = [];
 
     foreach (range('A', 'Z') as $index => $symbol) {
@@ -49,10 +65,13 @@ function signCatalog(): array
             'camera_eligible' => $cameraEligible,
             'classifier_id' => $cameraEligible ? $qualifiedId : null,
             'content_key' => 'signs.entries.alphabet.' . $symbol,
+            'reference_direct' => true,
             'unavailable_reason' => $motion === 'dynamic'
                 ? 'dynamic'
                 : ($cameraEligible ? null : ($alphabetCameraLimits[$symbol] ?? 'fine_detail')),
-            'reference_url' => BIM_SIGN_REFERENCE_URL,
+            'reference_url' => BIM_SIGN_REFERENCE_URL
+                . '/alphabets/' . strtolower($symbol)
+                . '/' . rawurlencode($alphabetReferenceWords[$symbol] ?? $symbol),
         ];
     }
 
@@ -70,8 +89,11 @@ function signCatalog(): array
             'camera_eligible' => $cameraEligible,
             'classifier_id' => $cameraEligible ? $qualifiedId : null,
             'content_key' => 'signs.entries.numbers.' . $symbol,
+            'reference_direct' => isset($numberReferenceWords[$number]),
             'unavailable_reason' => $motion === 'dynamic' ? 'dynamic' : ($cameraEligible ? null : 'fine_detail'),
-            'reference_url' => BIM_SIGN_REFERENCE_URL,
+            'reference_url' => isset($numberReferenceWords[$number])
+                ? BIM_NUMBER_REFERENCE_URL . '/' . rawurlencode($numberReferenceWords[$number])
+                : BIM_NUMBER_REFERENCE_URL,
         ];
     }
 

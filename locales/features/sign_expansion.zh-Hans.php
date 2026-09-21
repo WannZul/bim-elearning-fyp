@@ -17,7 +17,7 @@ $copy = [
             'fine_detail' => '关键点目前无法可靠确认此手势的细微手形。',
         ],
         'movement' => ['J' => '用手形描出 J。', 'Z' => '用手形描出 Z。', '10' => '旋转竖起拇指的手形。'], 'ready_desc' => '使用单手 MediaPipe 关键点与 Fingerpose 练习 19 个指定静态手势。',
-        'prototype' => '学习参考：MFD BIM 手语资料库。来源仓库没有许可证，因此不复制第三方图片。', 'reference_link' => '打开 MFD BIM 手语资料库', 'practice_aria' => '使用摄像头练习:title',
+        'prototype' => '学习参考：MFD BIM 手语资料库。来源仓库没有许可证，因此不复制第三方图片。', 'reference_link' => '打开 MFD BIM 手语资料库', 'reference_category_link' => '浏览 BIM 手语资料库数字类别', 'practice_aria' => '使用摄像头练习:title',
     ],
     'ai' => ['intro' => '选择字母或数字，再练习 19 个指定静态原型手势之一。系统只在所选类别中分类。', 'category_label' => '选择手势类别', 'alphabet' => '字母', 'numbers' => '数字', 'alphabet_count' => '9 个兼容字母', 'numbers_count' => '10 个兼容数字', 'target_heading' => ':category目标', 'target_count' => '可选 :count 个目标', 'equivalent_note' => '部分字母与数字手势外形相同。原型会按所选类别进行解释。', 'validation_note' => 'A 与数字 1–4 已获得积极的用户试用反馈。新增手势仍属于实验候选，需继续在更多用户、光线、距离、背景和左右手条件下测试。', 'instruction' => '清楚做出所选静态手势并保持，直到浏览器确认。', 'js' => ['category_changed' => '类别已切换为:category', 'title_sign' => ':category :target']],
     'quiz' => ['hub_intro' => '选择 60 秒理论测验或 90 秒低风险摄像头实践。', 'theory_heading' => '理论测验', 'theory_intro' => '回答五道随机知识题。', 'practical_heading' => '摄像头练习原型', 'practical_intro' => '展示五个不同的兼容手势。结果仅作为低风险个人练习，并非安全的正式考核或排名依据。', 'practical_card_meta' => '5 个摄像头目标', 'practical_choose' => '开始摄像头练习', 'practical_duration' => '90 秒', 'scope' => '课程涵盖 A–Z 与 0–10。引导式摄像头练习提供 19 个指定候选；在完成握拳手形混淆测试记录前，临时无分数挑战不包含 A。'],

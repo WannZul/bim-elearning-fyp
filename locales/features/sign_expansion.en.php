@@ -34,7 +34,7 @@ $copy = [
         ],
         'ready_desc' => 'Practise 19 selected static signs using one-hand MediaPipe landmarks and Fingerpose.',
         'prototype' => 'Learning reference: MFD BIM Sign Bank. No third-party images are copied because the source repository provides no licence.',
-        'reference_link' => 'Open MFD BIM Sign Bank', 'practice_aria' => 'Practise :title with the camera',
+        'reference_link' => 'Open MFD BIM Sign Bank', 'reference_category_link' => 'Browse BIM Sign Bank numbers', 'practice_aria' => 'Practise :title with the camera',
     ],
     'ai' => [
         'intro' => 'Choose alphabet or numbers, then practise one of the 19 selected static prototype signs. Classification is scoped to the selected category.',
